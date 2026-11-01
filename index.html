@@ -239,7 +239,7 @@ const kvGet=k=>rq(st('kv').get(k)),kvSet=(k,v)=>rq(st('kv',1).put(v,k));
 const pAll=()=>rq(st('photos').getAll()),pGet=n=>rq(st('photos').get(n)),pPut=p=>rq(st('photos',1).put(p)),pDel=n=>rq(st('photos',1).delete(n));
 
 /* ---------- GitHub Gist (sincronização entre aparelhos) ---------- */
-const gh=(m,path,body)=>fetch('https://api.github.com/gists'+(path||''),{method:m,headers:{Authorization:'Bearer '+S.tok,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:body&&JSON.stringify(body)}).then(r=>{if(!r.ok)throw new Error('GitHub '+r.status);return r.json()});
+const gh=(m,path,body)=>fetch('https://api.github.com/gists'+(path||''),{method:m,cache:'no-cache',headers:{Authorization:'Bearer '+S.tok,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:body&&JSON.stringify(body)}).then(r=>{if(!r.ok)throw new Error('GitHub '+r.status);return r.json()});
 const gGet=()=>gh('GET','/'+S.gid),gSet=files=>gh('PATCH','/'+S.gid,{files});
 const txt=f=>f.truncated?fetch(f.raw_url).then(r=>r.text()):f.content;
 const loadImg=u=>new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=u});
@@ -356,8 +356,9 @@ async function init(){
   const m=location.hash.match(/^#g=([0-9a-f]+)\.(\w+)$/i);
   if(m){await kvSet('sync',{gid:m[1],tok:m[2]});try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
   S=await kvGet('sync')||{};$('#gts').innerHTML=thsw();route()}
-function route(){clearInterval(timer);stopCam();app.className='';app.onclick=app.oninput=null;const adm=location.hash==='#admin';$('#gts').hidden=adm;adm?admin():guestHome()}
+function route(){clearInterval(timer);if(TW){TW.terminate();TW=null}stopCam();app.className='';app.onclick=app.oninput=null;const adm=location.hash==='#admin';$('#gts').hidden=adm;adm?admin():guestHome()}
 addEventListener('hashchange',route);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&typeof tick==='function')tick()});
 
 /* ---------- CONVIDADO ---------- */
 async function guestHome(){
@@ -412,7 +413,7 @@ function result(img){
   up()}
 
 /* ---------- PAINEL PROFISSIONAL (#admin) ---------- */
-let tab='home',GG=null,dirt=0,AUTO=true,pt;
+let TW=null,tab='home',GG=null,dirt=0,AUTO=true,pt;
 const TABS=[['home','Visão geral','Painel'],['design','Modelos e molduras','Molduras'],['rules','Regras de uso','Regras'],['queue','Fila de impressão','Fila'],['prn','Tamanhos de impressão','Impressão'],['f34','Fotos 3x4','3x4'],['guests','Convidados','Convidados'],['conn','Conexão e QR Code','Conexão']];
 /* ---------- ícones vetoriais (SVG, traço 2px) ---------- */
 const ICONS={
@@ -477,7 +478,7 @@ async function admin(){
   try{const pv=await kvGet('pv');if(pv){const im=await loadImg(pv);if(im){PVC=shrink(im,1200);pvv++}}}catch(e){}
   app.innerHTML=`<div class=shell><aside class=sb><div class=logo><i>${ico('camera')}</i>Cabine de Fotos</div><nav id=nv></nav><div class=sbf><p id=sy class=m><i class="dot w"></i>Aguardando conexão</p><small id=en class=m></small></div></aside><section class=mn><header class=top><h1 id=tt></h1><div class=tr><span id=dr class=m></span>${thsw()}<button id=bl class=bell data-a=gq title="Fotos aguardando" aria-label="Fotos aguardando">${ico('bell')}<b id=bc hidden>0</b></button><button class=pri id=sv data-a=sv title="Salvar e publicar (Ctrl+S)">${ico('cloud')}<span class=lbl-sv>Salvar e publicar</span></button></div></header><div id=pg></div></section></div>`;
   app.onclick=act;app.oninput=inp;
-  show(S.gid?'home':'conn');timer=setInterval(tick,5000);tick();
+  show(S.gid?'home':'conn');try{TW=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},3000)'])));TW.onmessage=()=>tick()}catch(e){timer=setInterval(tick,3000)}tick();
   try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}}
 addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'&&$('#sv')){e.preventDefault();save()}});
 function show(t){tab=t;$('#nv').innerHTML=TABS.map(([k,n,s])=>`<button data-a=tab data-k=${k} class="${k===t?'on':''}">${ico(k)}<span class=lg>${n}</span><span class=sh>${s}</span></button>`).join('');$('#tt').textContent=TABS.find(x=>x[0]===t)[1];$('#en').textContent=cfg.event;badge();page()}
@@ -599,7 +600,7 @@ async function badge(){PEN=(await pAll()).filter(p=>p.status==='pending').length
 async function queue(){
   const ps=(await pAll()).sort((a,b)=>b.ts-a.ts),pe=ps.filter(p=>p.status==='pending'),pr=ps.filter(p=>p.status!=='pending');
   const card=p=>`<div class="qi ${p.status==='pending'?'pend':''}"><img src="${p.img}"><b>${esc(nm(p.guest))}</b><span class=m>${p.fmt==='strip'?'Tirinha':'Polaroide'} · ${new Date(p.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span><div class=qb>${p.status==='pending'?`<button class=pri data-a=pr data-k="${esc(p.name)}">${ico('print')}Imprimir</button><button class=btn-del data-a=rm data-k="${esc(p.name)}">${ico('x')}Recusar</button>`:`<button data-a=pr data-k="${esc(p.name)}">${ico('print')}Reimprimir</button><a download="foto-${esc(p.guest)}-${p.ts}.jpg" href="${p.img}">${ico('download')}Baixar</a><button class="ic btn-del" title="Remover" aria-label="Remover" data-a=rm data-k="${esc(p.name)}">${ico('trash')}</button>`}</div></div>`;
-  return `<div class=card><div class=ph><h2>Aguardando liberação <small class=m>${pe.length}</small></h2>${pe.length?`<span><button class=pri data-a=pk title="Junta fotos de convidados diferentes na mesma folha">${ico('layout')}Agrupar em folhas (${pe.length} foto(s) → ${packN(pe)} folha(s))</button><button data-a=pa>${ico('print')}Imprimir uma por vez</button></span>`:''}</div><div class=qg>${pe.map(card).join('')||'<p class=m>Nenhuma foto aguardando.</p>'}</div></div>
+  return `<div class=card><div class=ph><h2>Aguardando liberação <small class=m>${pe.length}</small></h2><span><button class=pri data-a=pk ${pe.length?'':'disabled'} title="Junta fotos de convidados diferentes na mesma folha">${ico('layout')}Agrupar em folhas${pe.length?' ('+pe.length+' foto(s) → '+packN(pe)+' folha(s))':''}</button><button data-a=pa ${pe.length?'':'disabled'}>${ico('print')}Imprimir uma por vez</button></span></div><div class=qg>${pe.map(card).join('')||'<p class=m>Nenhuma foto aguardando.</p>'}</div></div>
   <div class=card><h2>Já impressas <small class=m>${pr.length}</small></h2><div class=qg>${pr.map(card).join('')||'<p class=m>Nada impresso ainda.</p>'}</div><p><button class=btn-del data-a=lq>${ico('trash')}Limpar fila deste computador</button></p></div>`}
 async function guests(){
   const c={};if(GG)Object.keys(GG.files).forEach(n=>{const m=n.match(/^c-([a-z0-9]+)-\d+\.txt$/);if(m)c[m[1]]=(c[m[1]]||0)+1});
