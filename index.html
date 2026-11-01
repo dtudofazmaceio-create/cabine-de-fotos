@@ -250,9 +250,18 @@ async function loadCfg(){const g=await gGet(),f=g.files;
   return g}
 
 /* ---------- utilitários ---------- */
-function printImg(src,kind){const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);const d=f.contentDocument;d.open();
+function gridCss(L){const gh=L.rows*L.h,top=Math.max(0,(L.pg[1]-gh)/2);
+  return '@page{margin:0;size:'+L.pg[0]+'cm '+L.pg[1]+'cm}html,body{margin:0}.pg{width:'+L.pg[0]+'cm;height:'+(L.pg[1]-.2)+'cm;padding-top:'+top+'cm;box-sizing:border-box;overflow:hidden;display:grid;grid-template-columns:repeat('+L.cols+','+L.w+'cm);grid-auto-rows:'+L.h+'cm;justify-content:center;align-content:start}.pg+.pg{break-before:page;page-break-before:always}img{display:block;width:'+L.w+'cm;height:'+L.h+'cm;outline:.1mm solid #999}'}
+function printGrid(L,srcs){const cap=Math.max(1,L.cols*L.rows),f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);
+  const d=f.contentDocument;d.open();d.write('<!doctype html><meta charset=utf-8><style>'+gridCss(L)+'</style><body></body>');d.close();
+  for(let i=0;i<srcs.length;i+=cap){const pg=d.createElement('div');pg.className='pg';srcs.slice(i,i+cap).forEach(u=>{const im=d.createElement('img');im.src=u;pg.appendChild(im)});d.body.appendChild(pg)}
+  const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
+  Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
+function printImg(src,kind){
+  if(kind==='strip'||kind==='pola'){const L=lay(kind);if(L.pg)return printGrid(L,Array(L.n).fill(src))}
+  const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);const d=f.contentDocument;d.open();
   let css='@page{margin:0}body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center}img{max-width:100%;max-height:100vh}',n=1;
-  if(kind==='strip'||kind==='pola'){const L=lay(kind);n=L.n;css='@page{margin:0'+(L.pg?';size:'+L.pg[0]+'cm '+L.pg[1]+'cm':'')+'}html,body{margin:0}body{height:100vh;display:flex;align-items:center;justify-content:center}img{flex:none;display:block;width:'+L.w+'cm;height:'+L.h+'cm}'}
+  if(kind==='strip'||kind==='pola'){const L=lay(kind);n=L.n;css='@page{margin:0}html,body{margin:0}body{height:100vh;display:flex;align-items:center;justify-content:center}img{flex:none;display:block;width:'+L.w+'cm;height:'+L.h+'cm}'}
   d.write('<style>'+css+'</style>'+('<img src="'+src+'">').repeat(n));d.close();
   const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
@@ -506,24 +515,32 @@ async function rules(){
   
   <p class=m>Lembre de clicar em “Salvar e publicar” para os convidados receberem as mudanças.</p></div>`}
 const PP=[['auto','Padrão da impressora'],['10x15','10×15 cm (4×6")',10,15],['a6','A6 · 10,5×14,8 cm',10.5,14.8],['13x18','13×18 cm (5×7")',13,18],['15x20','15×20 cm (6×8")',15,20],['a5','A5 · 14,8×21 cm',14.8,21],['a4','A4 · 21×29,7 cm',21,29.7],['let','Carta · 21,6×27,9 cm',21.6,27.9]];
-const PRD={stP:'auto',stW:5,stN:1,poP:'auto',poW:10};let PR={...PRD},PEN=0;
+const PRD={stP:'auto',stW:5,stN:1,poP:'auto',poW:10,poN:1};let PR={...PRD},PEN=0;
 const nm=k=>k.charAt(0).toUpperCase()+k.slice(1),f1=v=>String(+v.toFixed(1)).replace('.',',');
-function lay(kind){const st=kind==='strip',w=Math.max(1,+(st?PR.stW:PR.poW)||(st?5:10)),h=st?w*3:w*1100/900,n=st?Math.max(1,PR.stN|0||1):1,pp=PP.find(x=>x[0]===(st?PR.stP:PR.poP)),tw=n*w;let pg=pp&&pp[2]?[pp[2],pp[3]]:null;
-  if(pg&&(tw>pg[0]||h>pg[1])&&tw<=pg[1]&&h<=pg[0])pg=[pg[1],pg[0]];
-  return{w,h,n,pg,tw,over:!!pg&&(tw>pg[0]+.01||h>pg[1]+.01)}}
-function sheet(k){const L=lay(k),pw=L.pg?L.pg[0]:L.tw*1.25,ph=L.pg?L.pg[1]:L.h*1.15,it=`<i style="width:${L.w/pw*100}%;aspect-ratio:${L.w}/${L.h}"></i>`;
-  return `<div class=sheet style="aspect-ratio:${pw}/${ph}"><div class=sit>${it.repeat(L.n)}</div></div><p class=m style="font-size:13px;margin:6px 0 0">Cada foto: <b>${f1(L.w)}×${f1(L.h)} cm</b>${L.n>1?' · '+L.n+' por folha':''} · ${L.pg?'Folha '+f1(L.pg[0])+'×'+f1(L.pg[1])+' cm'+(L.pg[0]>(PP.find(x=>x[0]===(k==='strip'?PR.stP:PR.poP))||[])[2]?' (horizontal)':''):'Folha padrão da impressora'}${L.over?'<br><span class="err wr">'+ico('warn')+'Não cabe na folha escolhida. Reduza o tamanho ou escolha um papel maior.</span>':''}</p>`}
+function lay(kind,pack){const st=kind==='strip',w=Math.max(1,+(st?PR.stW:PR.poW)||(st?5:10)),h=st?w*3:w*1100/900,req=st?PR.stN:PR.poN,pp=PP.find(x=>x[0]===(st?PR.stP:PR.poP));
+  let pg=pp&&pp[2]?[pp[2],pp[3]]:null;if(!pg&&pack)pg=[21,29.7];
+  if(!pg){const n=req==='max'?1:Math.max(1,+req||1);return{w,h,n,pg:null,cols:n,rows:1,cap:n,over:0,req}}
+  const fl=(pw,ph)=>{const c=Math.floor(pw/w+1e-6),r=Math.floor(ph/h+1e-6);return{pw,ph,cols:c,rows:r,cap:c*r}},
+  a=fl(pg[0],pg[1]),b=fl(pg[1],pg[0]),B=b.cap>a.cap?b:a;
+  if(!B.cap)return{w,h,n:1,pg,cols:1,rows:1,cap:0,over:1,req};
+  const n=pack||req==='max'?B.cap:Math.min(Math.max(1,+req||1),B.cap);
+  return{w,h,n,pg:[B.pw,B.ph],cols:B.cols,rows:B.rows,cap:B.cap,over:0,req}}
+function sheet(k){const L=lay(k),pw=L.pg?L.pg[0]:L.w*L.cols*1.25,ph=L.pg?L.pg[1]:L.h*1.15,x0=(pw-L.cols*L.w)/2,y0=(ph-L.rows*L.h)/2;let it='';
+  for(let i=0;i<L.n;i++){const c=i%L.cols,r=Math.floor(i/L.cols);it+=`<i style="position:absolute;left:${(x0+c*L.w)/pw*100}%;top:${(y0+r*L.h)/ph*100}%;width:${L.w/pw*100}%;height:${L.h/ph*100}%"></i>`}
+  const pp=PP.find(x=>x[0]===(k==='strip'?PR.stP:PR.poP))||[],hz=L.pg&&pp[2]&&L.pg[0]>pp[2],lim=L.pg&&!L.over&&L.req!=='max'&&+L.req>L.cap;
+  return `<div class=sheet style="aspect-ratio:${pw}/${ph}"><div class=sit style="position:relative;height:100%">${it}</div></div><p class=m style="font-size:13px;margin:6px 0 0">Cada foto: <b>${f1(L.w)}×${f1(L.h)} cm</b> · <b>${L.n} por folha</b>${L.pg?' ('+L.cols+'×'+L.rows+')':''} · ${L.pg?'Folha '+f1(L.pg[0])+'×'+f1(L.pg[1])+' cm'+(hz?' (horizontal)':''):'Folha padrão da impressora'}${lim?'<br><span class="wr" style="color:var(--wa)">'+ico('warn')+'Só cabem '+L.cap+' nesta folha.</span>':''}${L.over?'<br><span class="err wr">'+ico('warn')+'Não cabe na folha escolhida. Reduza o tamanho ou escolha um papel maior.</span>':''}</p>`}
 async function prn(){
   const blk=(k,t,pr)=>{const st=k==='strip',pp=st?'stP':'poP',wk=st?'stW':'poW';return `<div class=card><h2>${t}</h2>
   <label>Papel<select data-p=${pp}>${PP.map(x=>`<option value=${x[0]} ${PR[pp]===x[0]?'selected':''}>${x[1]}</option>`).join('')}</select></label>
   <label style="margin-top:14px">Tamanho da foto impressa</label><div class=chips id=ch-${k}>${pr.map(w=>`<button class="chip ${+PR[wk]===w?'on':''}" data-a=psz data-k="${k}:${w}">${w}×${st?w*3:f1(w*1100/900)} cm</button>`).join('')}</div>
   <label>Largura personalizada (cm)<input type=number step=.1 min=2 max=30 data-p=${wk} value="${PR[wk]}"></label>
-  ${st?`<label>Tirinhas por folha (lado a lado)<select data-p=stN>${[1,2,3,4].map(n=>`<option ${PR.stN==n?'selected':''}>${n}</option>`).join('')}</select></label>`:''}
+  <label>Cópias da mesma foto por folha<select data-p=${st?'stN':'poN'}>${[1,2,3,4,6,8,12,'max'].map(n=>`<option value=${n} ${PR[st?'stN':'poN']==n?'selected':''}>${n==='max'?'Máximo (encher a folha)':n}</option>`).join('')}</select></label>
   <div id=sh-${k}>${sheet(k)}</div></div>`};
   return `<div class=g2c>${blk('strip','Tirinha (proporção 1:3)',[3,4,5,6,7,8])}${blk('pola','Polaroide',[6,8,9,10,12,15])}</div>
   <div class=card><h2>Liberação e testes</h2><label class=ck><input type=checkbox data-a=auto ${AUTO?'checked':''}> Imprimir automaticamente, sem aprovação (desligado: você decide cada foto)</label>
   <p class=m style="font-size:13px">Estes ajustes valem para este computador e já são aplicados na hora. Na janela de impressão do navegador, deixe a escala em 100% e as margens em “Nenhuma”.</p>
   <button data-a=ptest data-k=strip>${ico('film')}Imprimir teste · tirinha</button><button data-a=ptest data-k=pola>${ico('polaroid')}Imprimir teste · polaroide</button></div>`}
+const packN=ps=>['strip','pola'].reduce((t,k)=>{const n=ps.filter(p=>p.fmt===k).length;return t+(n?Math.ceil(n/Math.max(1,lay(k,1).cap)):0)},0);
 function prUpd(){for(const k of['strip','pola']){const e=$('#sh-'+k);if(e)e.innerHTML=sheet(k);const w=+PR[k==='strip'?'stW':'poW'];document.querySelectorAll('#ch-'+k+' .chip').forEach(b=>b.classList.toggle('on',+b.dataset.k.split(':')[1]===w))}}
 /* ---------- imagem de exemplo das molduras + fotos 3x4 ---------- */
 let pvv=0,F34I=null,F34={qty:6,paper:'a4',gap:2,guides:true,z:100,ox:0,oy:0};
@@ -582,7 +599,7 @@ async function badge(){PEN=(await pAll()).filter(p=>p.status==='pending').length
 async function queue(){
   const ps=(await pAll()).sort((a,b)=>b.ts-a.ts),pe=ps.filter(p=>p.status==='pending'),pr=ps.filter(p=>p.status!=='pending');
   const card=p=>`<div class="qi ${p.status==='pending'?'pend':''}"><img src="${p.img}"><b>${esc(nm(p.guest))}</b><span class=m>${p.fmt==='strip'?'Tirinha':'Polaroide'} · ${new Date(p.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span><div class=qb>${p.status==='pending'?`<button class=pri data-a=pr data-k="${esc(p.name)}">${ico('print')}Imprimir</button><button class=btn-del data-a=rm data-k="${esc(p.name)}">${ico('x')}Recusar</button>`:`<button data-a=pr data-k="${esc(p.name)}">${ico('print')}Reimprimir</button><a download="foto-${esc(p.guest)}-${p.ts}.jpg" href="${p.img}">${ico('download')}Baixar</a><button class="ic btn-del" title="Remover" aria-label="Remover" data-a=rm data-k="${esc(p.name)}">${ico('trash')}</button>`}</div></div>`;
-  return `<div class=card><div class=ph><h2>Aguardando liberação <small class=m>${pe.length}</small></h2>${pe.length?`<button class=pri data-a=pa>${ico('print')}Imprimir todas (${pe.length})</button>`:''}</div><div class=qg>${pe.map(card).join('')||'<p class=m>Nenhuma foto aguardando.</p>'}</div></div>
+  return `<div class=card><div class=ph><h2>Aguardando liberação <small class=m>${pe.length}</small></h2>${pe.length?`<span><button class=pri data-a=pk title="Junta fotos de convidados diferentes na mesma folha">${ico('layout')}Agrupar em folhas (${pe.length} foto(s) → ${packN(pe)} folha(s))</button><button data-a=pa>${ico('print')}Imprimir uma por vez</button></span>`:''}</div><div class=qg>${pe.map(card).join('')||'<p class=m>Nenhuma foto aguardando.</p>'}</div></div>
   <div class=card><h2>Já impressas <small class=m>${pr.length}</small></h2><div class=qg>${pr.map(card).join('')||'<p class=m>Nada impresso ainda.</p>'}</div><p><button class=btn-del data-a=lq>${ico('trash')}Limpar fila deste computador</button></p></div>`}
 async function guests(){
   const c={};if(GG)Object.keys(GG.files).forEach(n=>{const m=n.match(/^c-([a-z0-9]+)-\d+\.txt$/);if(m)c[m[1]]=(c[m[1]]||0)+1});
@@ -628,6 +645,12 @@ async function act(e){
   if(a==='notif'){await Notification.requestPermission();return page()}
   if(a==='pa'){for(const p of(await pAll()).filter(p=>p.status==='pending').sort((x,y)=>x.ts-y.ts)){printImg(p.img,p.fmt);p.status='printed';await pPut(p);await sleep(3000)}await badge();return page()}
   if(a==='auto'){AUTO=t.checked;return kvSet('auto',AUTO)}
+  if(a==='pk'){const ps=(await pAll()).filter(p=>p.status==='pending').sort((x,y)=>x.ts-y.ts);if(!ps.length)return;
+    if(!confirm('Imprimir '+ps.length+' foto(s) agrupadas em '+packN(ps)+' folha(s)?\nAs fotos ocupam o papel configurado em Impressão (sem papel definido, usa A4).'))return;
+    for(const kd of['strip','pola']){const g=ps.filter(p=>p.fmt===kd);if(!g.length)continue;const L=lay(kd,1);
+      if(!L.cap){alert('A foto '+(kd==='strip'?'tirinha':'polaroide')+' não cabe no papel escolhido. Ajuste em Impressão.');continue}
+      printGrid(L,g.map(p=>p.img));for(const p of g){p.status='printed';await pPut(p)}await sleep(3000)}
+    await badge();return page()}
   if(a==='sv')return save();
   if(a==='pr'){const p=await pGet(k);printImg(p.img,p.fmt);p.status='printed';await pPut(p);await badge();return page()}
   if(a==='rm'){await pDel(k);await badge();return page()}
