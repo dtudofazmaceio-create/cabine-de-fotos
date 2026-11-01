@@ -198,6 +198,11 @@ html.hasbg .sb{background:color-mix(in srgb,var(--sb) 84%,transparent);-webkit-b
 .bgp>div{position:absolute;inset:0;background-size:cover;background-repeat:no-repeat;transform-origin:center}
 .bgp>span{position:absolute;left:12%;right:12%;top:32%;padding:16px;border-radius:12px;text-align:center;font-size:14px;background:color-mix(in srgb,var(--c) 88%,transparent);border:1px solid var(--b);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 
+/* miniatura da moldura PNG */
+.frr{display:flex;align-items:center;gap:12px;margin:6px 0 14px}
+.frr img{height:72px;border-radius:6px;border:1px solid var(--b);background:repeating-conic-gradient(#8885 0 25%,transparent 0 50%) 50%/14px 14px}
+.frr button{margin:0}
+
 /* fila */
 .qg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
 .qi{border:1px solid var(--b);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--c2)}
@@ -517,8 +522,8 @@ async function design(){
     <label>Borda das fotos<select data-f=pb>${[['w','Branca'],['acc','Cor de destaque'],['none','Sem borda']].map(([v,n])=>`<option value=${v} ${v===cfg.pb?'selected':''}>${n}</option>`).join('')}</select></label>${R('rd','Cantos arredondados',0,40)}
     <button data-a=tpl data-k="${cfg.tpl}">${ico('reset')}Restaurar cores do modelo</button></div>`,
   png:`<p class=m>Envie um PNG transparente (arte de designer, logo, moldura pronta). Ele é desenhado por cima do modelo.</p>
-    <label>Tirinha · 600×1800 px ${FR.strip?'<span class="ok tag"><i class=dot></i>ativa</span>':''}<input type=file data-k=strip accept=image/*></label><label>Polaroide · 900×1100 px ${FR.pola?'<span class="ok tag"><i class=dot></i>ativa</span>':''}<input type=file data-k=pola accept=image/*></label>
-    <label class=ck><input type=checkbox id=r1> Remover moldura própria da tirinha</label><label class=ck><input type=checkbox id=r2> Remover moldura própria da polaroide</label>`};
+    <label>Tirinha · 600×1800 px ${FR.strip?'<span class="ok tag"><i class=dot></i>ativa</span>':''}<input type=file data-k=strip accept=image/*></label>${frRow('strip')}<label>Polaroide · 900×1100 px ${FR.pola?'<span class="ok tag"><i class=dot></i>ativa</span>':''}<input type=file data-k=pola accept=image/*></label>${frRow('pola')}
+    `};
   return `<div class=studio><div class=card><div class=seg>${DT.map(([k,n,i])=>`<button class="${k===dtab?'on':''}" data-a=sub data-k=${k}>${ico(i)}${n}</button>`).join('')}</div>${P[dtab]}</div>
   <aside class="card pvc"><div class=ph><h2>Prévia ao vivo</h2><div class=seg>${[['both','Ambas'],['strip','Tirinha'],['pola','Polaroide']].map(([k,n])=>`<button class="${k===pf?'on':''}" data-a=pf data-k=${k}>${n}</button>`).join('')}</div></div>
   <div class=stage><div class=pvs data-pf=${pf}><img id=pa><img id=pb></div></div><p class=m style="font-size:12px;margin:12px 0 0">Alterações só chegam aos convidados após “Salvar e publicar” (Ctrl+S).</p></aside></div>`}
@@ -605,7 +610,8 @@ function print34(){
   const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
 /* ---------- plano de fundo do sistema ---------- */
-let BG={img:null,op:40,z:100,x:50,y:50},BGG=null;
+let BG={img:null,op:40,z:100,x:50,y:50},BGG=null,delFr={};
+const frRow=k=>FR[k]?`<div class=frr><img src="${FR[k].src}"><button class=btn-del data-a=frx data-k=${k}>${ico('trash')}Remover moldura</button></div>`:'';
 function applyBG(b){let e=$('#bgl');if(!e){e=document.createElement('div');e.id='bgl';document.body.prepend(e)}
   const on=!!(b&&b.img);document.documentElement.classList.toggle('hasbg',on);e.style.display=on?'':'none';
   if(on){e.style.backgroundImage='url("'+b.img+'")';e.style.backgroundPosition=b.x+'% '+b.y+'%';e.style.opacity=b.op/100;e.style.transform='scale('+b.z/100+')'}}
@@ -655,7 +661,7 @@ async function inp(e){const t=e.target;
     if(['qty','paper','gap','guides'].includes(g))saveF34();return upd34()}
   if(t.id==='bgf'){const f=t.files[0];if(f){BG.img=shrink(await createImageBitmap(f),1600).toDataURL('image/jpeg',.8);await kvSet('bg',BG);applyBG(BG);if(cfg.bgG)dirty();await page()}return}
   if(t.dataset.b){const b=t.dataset.b;BG[b]=+t.value;const o=t.parentNode.querySelector('output');if(o)o.textContent=t.value+(t.dataset.u||'');applyBG(BG);updBGp();kvSet('bg',BG);if(cfg.bgG&&BG.img)dirty();return}
-  if(t.type==='file'){const f=t.files[0];if(!f)return;const k=t.dataset.k,W=k==='strip'?600:900,H=k==='strip'?1800:1100,b=await createImageBitmap(f),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(b,0,0,W,H);newFr[k]=c.toDataURL('image/png');FR[k]=await loadImg(newFr[k]);dirty();return prev()}
+  if(t.type==='file'){const f=t.files[0];if(!f)return;const k=t.dataset.k,W=k==='strip'?600:900,H=k==='strip'?1800:1100,b=await createImageBitmap(f),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(b,0,0,W,H);newFr[k]=c.toDataURL('image/png');FR[k]=await loadImg(newFr[k]);dirty();return page()}
   const f=t.dataset.f;if(!f)return;
   cfg[f]=t.type==='checkbox'?t.checked:t.type==='number'?Math.max(1,+t.value||1):t.type==='range'?+t.value:t.value;if(t.type==='range'){const o=t.parentNode.querySelector('output');o&&(o.textContent=t.value)}dirty();if(f==='font'||t.type==='color'||f==='event'||f==='foot'||f==='dt')cfg.tpl=cfg.tpl;prev()}
 async function act(e){
@@ -664,6 +670,7 @@ async function act(e){
   if(a==='tab')return show(k);
   if(a==='q34'){F34.qty=k==='full'?Math.max(1,lay34().per):+k;const i=$('input[data-g=qty]');if(i)i.value=F34.qty;saveF34();return upd34()}
   if(a==='p34')return print34();
+  if(a==='frx'){if(!confirm('Remover a moldura PNG da '+(k==='strip'?'tirinha':'polaroide')+'?'))return;delete newFr[k];FR[k]=null;delFr[k]=1;dirty();return page()}
   if(a==='bgx'){BG.img=null;await kvSet('bg',BG);applyBG(BG);if(cfg.bgG)dirty();return page()}
   if(a==='pvx')return setPV(null,1);
   if(a==='tpl'){const m=TPL.find(x=>x.id===k);if(!m)return;Object.assign(cfg,tc(m));dirty();if(dtab!=='tpl')return page();document.querySelectorAll('.tp').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return prevNow()}
@@ -697,10 +704,10 @@ async function save(){
   if(!S.gid){alert('Configure o Gist na aba Conexão e QR.');return}
   const b=$('#sv');b.disabled=true;
   try{const files={'config.json':{content:JSON.stringify(cfg)}};
-    [['strip','r1'],['pola','r2']].forEach(([k,id])=>{const c=$('#'+id);if(c&&c.checked&&FR[k]&&!newFr[k]){files['frame-'+k+'.txt']=null;FR[k]=null}});
+    const dk=Object.keys(delFr).filter(k=>!newFr[k]);if(dk.length){const g=await gGet();dk.forEach(k=>{if(g.files['frame-'+k+'.txt'])files['frame-'+k+'.txt']=null})}
     for(const k in newFr)files['frame-'+k+'.txt']={content:newFr[k]};
     if(cfg.bgG&&BG.img)files['bg.txt']={content:JSON.stringify({img:BG.img,op:BG.op,z:BG.z,x:BG.x,y:BG.y})};else{const g=await gGet();if(g.files['bg.txt'])files['bg.txt']=null}
-    await gSet(files);newFr={};dirt=0;$('#dr').className='ok';$('#dr').innerHTML=ico('checkc')+'Publicado para os convidados'}
+    await gSet(files);newFr={};delFr={};dirt=0;$('#dr').className='ok';$('#dr').innerHTML=ico('checkc')+'Publicado para os convidados'}
   catch(e){$('#dr').textContent='Falha ao salvar: '+e.message}
   b.disabled=false}
 
