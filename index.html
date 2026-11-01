@@ -242,7 +242,7 @@ html.hasbg .sb{background:color-mix(in srgb,var(--sb) 84%,transparent);-webkit-b
 <script>
 const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms)),app=$('#app');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false};
+const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false,bo:60,bz:100,bx:50,by:50};
 let db,S={},cfg={...DEF},FR={},stream,fmt,guest,timer,busy=0,newFr={};
 
 /* ---------- IndexedDB (credenciais, config local e fila/arquivo da estação) ---------- */
@@ -260,7 +260,7 @@ const loadImg=u=>new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerr
 const countOf=(g,k)=>Object.keys(g.files).filter(n=>n.startsWith('c-'+k+'-')).length;
 async function loadCfg(){const g=await gGet(),f=g.files;
   cfg={...DEF,...JSON.parse(f['config.json']?await txt(f['config.json']):'{}')};
-  for(const k of['strip','pola']){FR[k]=null;const ff=f['frame-'+k+'.txt'];if(ff){const u=await txt(ff);if(u.startsWith('data:'))FR[k]=await loadImg(u)}}
+  for(const k of['strip','pola','bg']){FR[k]=null;const ff=f['frame-'+k+'.txt'];if(ff){const u=await txt(ff);if(u.startsWith('data:'))FR[k]=await loadImg(u)}}
   BGG=null;if(cfg.bgG&&f['bg.txt'])try{BGG=JSON.parse(await txt(f['bg.txt']))}catch(e){}
   return g}
 
@@ -355,7 +355,7 @@ function deco(x,W,H,t){
   x.restore()}
 function compose(f,s,c=cfg){const strip=f==='strip',W=strip?600:900,H=strip?1800:1100,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
   const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,c.color);g.addColorStop(1,c.c2||c.color);x.fillStyle=g;x.fillRect(0,0,W,H);
-  deco(x,W,H,c);
+  if(FR.bg&&c.bo>0)drawBg(x,W,H,c);deco(x,W,H,c);
   const bc=c.pb==='acc'?c.acc:'#fff',rd=c.rd||0,pd=c.pb==='none'?0:10;
   (strip?[0,1,2].map(i=>[40,40+i*510,520,480]):[[50,50,800,800]]).forEach((b,i)=>{
     if(pd){x.save();x.shadowColor='rgba(0,0,0,.35)';x.shadowBlur=18;x.fillStyle=bc;x.beginPath();x.roundRect(b[0]-pd,b[1]-pd,b[2]+2*pd,b[3]+2*pd,rd?rd+pd:0);x.fill();x.restore()}
@@ -484,7 +484,7 @@ const CL=(f,t)=>`<label>${t}<input type=color data-f=${f} value="${cfg[f]||'#000
 const dirty=()=>{dirt=1;const d=$('#dr');if(d){d.className='m';d.innerHTML='<i class="dot w"></i>Alterações não salvas'}};
 
 let dtab='tpl',cat='Todos',pf='both',tgv=0,HP='',HK='';
-const TC={},tk=t=>t.id+[cfg.event,cfg.foot,cfg.dt,cfg.up,cfg.pb,cfg.rd,cfg.sz].join('|');
+const TC={},tk=t=>t.id+[cfg.event,cfg.foot,cfg.dt,cfg.up,cfg.pb,cfg.rd,cfg.sz,cfg.bo,cfg.bz,cfg.bx,cfg.by,pvv,!!FR.bg].join('|');
 const R=(f,t,a,b)=>`<label>${t}<output>${cfg[f]}</output><input type=range min=${a} max=${b} data-f=${f} value=${cfg[f]}></label>`;
 const DT=[['tpl','Modelos','layout'],['ev','Dados do evento','calendar'],['sty','Estilo','palette'],['png','Moldura PNG','image']];
 async function admin(){
@@ -492,7 +492,7 @@ async function admin(){
   if(S.gid)try{await loadCfg()}catch(e){}
   PR={...PRD,...((await kvGet('pr'))||(cfg.dup?{stN:2,stP:'10x15'}:{}))};
   F34={...F34,...((await kvGet('f34'))||{})};
-  try{const pv=await kvGet('pv');if(pv){const im=await loadImg(pv);if(im){PVC=shrink(im,1200);pvv++}}}catch(e){}
+  
   try{const b=await kvGet('bg');if(b)BG={...BG,...b}}catch(e){}if(!BG.img&&BGG)BG={...BG,...BGG};applyBG(BG);
   app.innerHTML=`<div class=shell><aside class=sb><div class=logo><i>${ico('camera')}</i>Cabine de Fotos</div><nav id=nv></nav><div class=sbf><p id=sy class=m><i class="dot w"></i>Aguardando conexão</p><small id=en class=m></small></div></aside><section class=mn><header class=top><h1 id=tt></h1><div class=tr><span id=dr class=m></span>${thsw()}<button id=bl class=bell data-a=gq title="Fotos aguardando" aria-label="Fotos aguardando">${ico('bell')}<b id=bc hidden>0</b></button><button class=pri id=sv data-a=sv title="Salvar e publicar (Ctrl+S)">${ico('cloud')}<span class=lbl-sv>Salvar e publicar</span></button></div></header><div id=pg></div></section></div>`;
   app.onclick=act;app.oninput=inp;
@@ -503,7 +503,7 @@ function show(t){tab=t;$('#nv').innerHTML=TABS.map(([k,n,s])=>`<button data-a=ta
 async function page(){const P={home,design,rules,prn,f34:f34tab,queue,guests,bg:bgtab,conn};const h=await P[tab]();if(!$('#pg'))return;$('#pg').innerHTML=h;if(tab==='design')prevNow();if(tab==='conn')mkqr();if(tab==='f34')upd34();if(tab==='bg')updBGp()}
 
 async function home(){
-  const ps=await pAll(),pen=ps.filter(p=>p.status==='pending').length,ks=GG?Object.keys(GG.files).filter(k=>k.startsWith('c-')):[],gs=new Set(ks.map(k=>k.split('-')[1])).size,tp=TPL.find(t=>t.id===cfg.tpl),key=JSON.stringify(cfg)+!!FR.pola+pvv;
+  const ps=await pAll(),pen=ps.filter(p=>p.status==='pending').length,ks=GG?Object.keys(GG.files).filter(k=>k.startsWith('c-')):[],gs=new Set(ks.map(k=>k.split('-')[1])).size,tp=TPL.find(t=>t.id===cfg.tpl),key=JSON.stringify(cfg)+!!FR.pola+!!FR.bg+pvv;
   if(key!==HK){HK=key;HP=compose('pola',[getDM()]).toDataURL('image/jpeg',.6)}
   const ok=(b,t,w)=>`<li><i class="dot ${b?'':'w'}"></i>${b?t:w}</li>`;
   return `${pen?`<div class='card alert'><div class=al><span class=ai>${ico('bell')}</span><div><b>${pen} foto(s) aguardando liberação</b><br><span class=m>Revise e escolha quais imprimir.</span></div></div><button class=pri data-a=gq>${ico('print')}Revisar e imprimir</button></div>`:''}<div class=stats>${[['Aguardando',pen,'clock','#f59e0b'],['Impressas',ps.length-pen,'print','#10b981'],['Fotos tiradas',ks.length,'camera','#6366f1'],['Convidados',gs,'users','#ec4899']].map(([a,b,c,d])=>`<div class="card st"><i style="background:${d}22;color:${d}">${ico(c)}</i><div><b>${b}</b><small class=m>${a}</small></div></div>`).join('')}</div>
@@ -565,8 +565,13 @@ function prUpd(){for(const k of['strip','pola']){const e=$('#sh-'+k);if(e)e.inne
 let pvv=0,F34I=null,F34={qty:6,paper:'a4',gap:2,guides:true,z:100,ox:0,oy:0};
 const P34=PP.filter(x=>x[2]),saveF34=()=>kvSet('f34',{qty:F34.qty,paper:F34.paper,gap:F34.gap,guides:F34.guides}),
 shrink=(b,max)=>{const r=Math.min(1,max/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*r);c.height=Math.round(b.height*r);c.getContext('2d').drawImage(b,0,0,c.width,c.height);return c};
-function setPV(b,save){PVC=b?shrink(b,1200):null;pvv++;Object.keys(TC).forEach(k=>delete TC[k]);if(save)kvSet('pv',PVC?PVC.toDataURL('image/jpeg',.88):null).catch(()=>{});return page()}
-const pvBox=()=>`<div class=pvu><label>Imagem de exemplo em todas as molduras (ex.: foto dos noivos)<input type=file id=pvf accept=image/*></label>${PVC?`<button class=btn-del data-a=pvx>${ico('x')}Voltar à imagem padrão</button>`:''}<p class=m style="font-size:12px;margin:6px 0 0">Aparece nas miniaturas, na prévia e nas impressões de teste. Os convidados continuam usando as próprias fotos.</p></div>`;
+function bgClear(){pvv++;Object.keys(TC).forEach(k=>delete TC[k])}
+const pvBox=()=>{const RF=(f,t,a,b)=>`<label>${t}<output>${cfg[f]}</output><input type=range min=${a} max=${b} data-f=${f} value=${cfg[f]}></label>`;
+  return `<div class=pvu><label>Foto de fundo das molduras (ex.: foto dos noivos)<input type=file id=pvf accept=image/*></label>${frRow('bg')}
+  ${FR.bg?RF('bo','Opacidade da foto (%)',0,100)+RF('bz','Zoom (%)',100,300)+RF('bx','Posição horizontal (%)',0,100)+RF('by','Posição vertical (%)',0,100):''}
+  <p class=m style="font-size:12px;margin:6px 0 0">A foto fica atrás das fotos dos convidados, em todas as molduras. Clique em “Salvar e publicar” para valer para os convidados.</p></div>`};
+function drawBg(x,W,H,c){const im=FR.bg,r=Math.max(W/im.width,H/im.height)*(c.bz||100)/100,vw=W/r,vh=H/r,px=(c.bx==null?50:c.bx)/100,py=(c.by==null?50:c.by)/100;
+  x.save();x.globalAlpha=(c.bo==null?60:c.bo)/100;x.drawImage(im,(im.width-vw)*px,(im.height-vh)*py,vw,vh,0,0,W,H);x.restore()}
 
 function crop34(W){W=W||600;const H=W*4/3,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W,H);
   if(!F34I){x.fillStyle='#e5e7eb';x.fillRect(0,0,W,H);x.fillStyle='#6b7280';x.font=(W/12)+'px sans-serif';x.textAlign='center';x.fillText('Sem foto',W/2,H/2);return c}
@@ -611,7 +616,7 @@ function print34(){
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
 /* ---------- plano de fundo do sistema ---------- */
 let BG={img:null,op:40,z:100,x:50,y:50},BGG=null,delFr={};
-const frRow=k=>FR[k]?`<div class=frr><img src="${FR[k].src}"><button class=btn-del data-a=frx data-k=${k}>${ico('trash')}Remover moldura</button></div>`:'';
+const frRow=k=>FR[k]?`<div class=frr><img src="${FR[k].src}"><button class=btn-del data-a=frx data-k=${k}>${ico('trash')}${k==='bg'?'Remover foto de fundo':'Remover moldura'}</button></div>`:'';
 function applyBG(b){let e=$('#bgl');if(!e){e=document.createElement('div');e.id='bgl';document.body.prepend(e)}
   const on=!!(b&&b.img);document.documentElement.classList.toggle('hasbg',on);e.style.display=on?'':'none';
   if(on){e.style.backgroundImage='url("'+b.img+'")';e.style.backgroundPosition=b.x+'% '+b.y+'%';e.style.opacity=b.op/100;e.style.transform='scale('+b.z/100+')'}}
@@ -646,7 +651,7 @@ async function conn(){
 
 const mkqr=()=>{const q=$('#qr');if(!q)return;q.innerHTML='';if(S.gid&&window.QRCode)new QRCode(q,{text:$('#lk').value.trim()+'#g='+S.gid+'.'+S.tok,width:240,height:240,correctLevel:QRCode.CorrectLevel.L})};
 let DM,PVC=null;const defDM=()=>{if(!DM){DM=document.createElement('canvas');DM.width=800;DM.height=600;const x=DM.getContext('2d'),g=x.createLinearGradient(0,0,800,600);g.addColorStop(0,'#fbcfe8');g.addColorStop(1,'#93c5fd');x.fillStyle=g;x.fillRect(0,0,800,600);x.fillStyle='rgba(255,255,255,.65)';x.beginPath();x.arc(400,250,95,0,7);x.fill();x.beginPath();x.ellipse(400,600,180,210,0,Math.PI,0);x.fill()}return DM};
-const getDM=()=>PVC||defDM();
+const getDM=()=>defDM();
 function prevNow(){const a=$('#pa');if(!a)return;const d=getDM();a.src=compose('strip',[d,d,d]).toDataURL('image/jpeg',.7);$('#pb').src=compose('pola',[d]).toDataURL('image/jpeg',.7);filt();thumbs()}
 const prev=()=>{clearTimeout(pt);pt=setTimeout(prevNow,120)};
 const filt=()=>{const q=($('#sq')||{value:''}).value.toLowerCase();document.querySelectorAll('.tp').forEach(b=>b.hidden=!((cat==='Todos'||b.dataset.cat===cat)&&b.dataset.n.includes(q)))};
@@ -654,7 +659,7 @@ async function thumbs(){if(!$('#tg'))return;const v=++tgv;for(const t of TPL){if
 
 async function inp(e){const t=e.target;
   if(t.dataset.p){const v=t.value;PR[t.dataset.p]=v!==''&&!isNaN(+v)?+v:v;kvSet('pr',PR);return prUpd()}if(t.id==='lk')return mkqr();if(t.id==='sq')return filt();
-  if(t.id==='pvf'){const f=t.files[0];if(f)await setPV(await createImageBitmap(f),1);return}
+  if(t.id==='pvf'){const f=t.files[0];if(f){newFr.bg=shrink(await createImageBitmap(f),1600).toDataURL('image/jpeg',.85);FR.bg=await loadImg(newFr.bg);delete delFr.bg;bgClear();dirty();await page()}return}
   if(t.id==='f34f'){const f=t.files[0];if(f){F34I=shrink(await createImageBitmap(f),2400);F34.z=100;F34.ox=0;F34.oy=0;await page()}return}
   if(t.dataset.g){const g=t.dataset.g;F34[g]=t.type==='checkbox'?t.checked:g==='qty'?Math.min(500,Math.max(1,parseInt(t.value)||1)):t.type==='range'?+t.value:t.value;
     if(t.type==='range'){const o=t.parentNode.querySelector('output');if(o)o.textContent=t.value+(t.dataset.u||'')}
@@ -670,9 +675,9 @@ async function act(e){
   if(a==='tab')return show(k);
   if(a==='q34'){F34.qty=k==='full'?Math.max(1,lay34().per):+k;const i=$('input[data-g=qty]');if(i)i.value=F34.qty;saveF34();return upd34()}
   if(a==='p34')return print34();
-  if(a==='frx'){if(!confirm('Remover a moldura PNG da '+(k==='strip'?'tirinha':'polaroide')+'?'))return;delete newFr[k];FR[k]=null;delFr[k]=1;dirty();return page()}
+  if(a==='frx'){if(!confirm(k==='bg'?'Remover a foto de fundo das molduras?':'Remover a moldura PNG da '+(k==='strip'?'tirinha':'polaroide')+'?'))return;delete newFr[k];FR[k]=null;delFr[k]=1;bgClear();dirty();return page()}
   if(a==='bgx'){BG.img=null;await kvSet('bg',BG);applyBG(BG);if(cfg.bgG)dirty();return page()}
-  if(a==='pvx')return setPV(null,1);
+  
   if(a==='tpl'){const m=TPL.find(x=>x.id===k);if(!m)return;Object.assign(cfg,tc(m));dirty();if(dtab!=='tpl')return page();document.querySelectorAll('.tp').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return prevNow()}
   if(a==='sub'){dtab=k;return page()}
   if(a==='cat'){cat=k;document.querySelectorAll('.chip').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return filt()}
