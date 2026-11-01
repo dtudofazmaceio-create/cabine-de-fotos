@@ -189,6 +189,15 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--m)}
 .s34{position:relative;width:min(100%,240px);margin:14px auto 6px;background:#fff;border:1px solid var(--b);box-shadow:0 6px 18px rgba(0,0,0,.14)}
 .s34 i{position:absolute;background:#e5e7eb var(--ph,none) center/cover no-repeat;outline:1px solid #8b5cf6}
 
+/* plano de fundo do sistema */
+#bgl{position:fixed;inset:0;z-index:-1;pointer-events:none;background-size:cover;background-repeat:no-repeat;transform-origin:center}
+html.hasbg .card{background:color-mix(in srgb,var(--c) 88%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+html.hasbg .alert{background:color-mix(in srgb,var(--wa) 10%,color-mix(in srgb,var(--c) 88%,transparent))}
+html.hasbg .sb{background:color-mix(in srgb,var(--sb) 84%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.bgp{position:relative;aspect-ratio:16/10;overflow:hidden;border-radius:12px;border:1px solid var(--b);background:var(--bg);margin-top:6px}
+.bgp>div{position:absolute;inset:0;background-size:cover;background-repeat:no-repeat;transform-origin:center}
+.bgp>span{position:absolute;left:12%;right:12%;top:32%;padding:16px;border-radius:12px;text-align:center;font-size:14px;background:color-mix(in srgb,var(--c) 88%,transparent);border:1px solid var(--b);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+
 /* fila */
 .qg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
 .qi{border:1px solid var(--b);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--c2)}
@@ -247,6 +256,7 @@ const countOf=(g,k)=>Object.keys(g.files).filter(n=>n.startsWith('c-'+k+'-')).le
 async function loadCfg(){const g=await gGet(),f=g.files;
   cfg={...DEF,...JSON.parse(f['config.json']?await txt(f['config.json']):'{}')};
   for(const k of['strip','pola']){FR[k]=null;const ff=f['frame-'+k+'.txt'];if(ff){const u=await txt(ff);if(u.startsWith('data:'))FR[k]=await loadImg(u)}}
+  BGG=null;if(cfg.bgG&&f['bg.txt'])try{BGG=JSON.parse(await txt(f['bg.txt']))}catch(e){}
   return g}
 
 /* ---------- utilitários ---------- */
@@ -356,7 +366,7 @@ async function init(){
   const m=location.hash.match(/^#g=([0-9a-f]+)\.(\w+)$/i);
   if(m){await kvSet('sync',{gid:m[1],tok:m[2]});try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
   S=await kvGet('sync')||{};$('#gts').innerHTML=thsw();route()}
-function route(){clearInterval(timer);if(TW){TW.terminate();TW=null}stopCam();app.className='';app.onclick=app.oninput=null;const adm=location.hash==='#admin';$('#gts').hidden=adm;adm?admin():guestHome()}
+function route(){clearInterval(timer);if(TW){TW.terminate();TW=null}applyBG(null);stopCam();app.className='';app.onclick=app.oninput=null;const adm=location.hash==='#admin';$('#gts').hidden=adm;adm?admin():guestHome()}
 addEventListener('hashchange',route);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&typeof tick==='function')tick()});
 
@@ -365,6 +375,7 @@ async function guestHome(){
   if(!S.gid)return app.innerHTML=`<header class=hero><span class=hi>${ico('qr')}</span><h1>Cabine de Fotos</h1><p class=m>Escaneie o QR Code do evento para começar.</p></header>`;
   app.innerHTML='<p class="m ld"><i class=spin></i>Carregando…</p>';
   try{await loadCfg()}catch(e){return app.innerHTML='<div class="card err">Não foi possível conectar. Verifique a internet e recarregue.</div>'}
+  applyBG(BGG);
   const f=[cfg.strip&&['strip','Tirinha','3 fotos, 3 poses','film'],cfg.pola&&['pola','Polaroide','1 foto','polaroid']].filter(Boolean);
   app.innerHTML=`<header class=hero><span class=hi>${ico('camera')}</span><h1>${esc(cfg.event)}</h1><p class=m>Tire sua foto e ela sai impressa com a moldura da festa.</p></header>
   <div class=card><label>Seu nome<span class=inw>${ico('user')}<input id=gn autocomplete=off placeholder="Ex.: Maria"></span></label>
@@ -414,7 +425,7 @@ function result(img){
 
 /* ---------- PAINEL PROFISSIONAL (#admin) ---------- */
 let TW=null,tab='home',GG=null,dirt=0,AUTO=true,pt;
-const TABS=[['home','Visão geral','Painel'],['design','Modelos e molduras','Molduras'],['rules','Regras de uso','Regras'],['queue','Fila de impressão','Fila'],['prn','Tamanhos de impressão','Impressão'],['f34','Fotos 3x4','3x4'],['guests','Convidados','Convidados'],['conn','Conexão e QR Code','Conexão']];
+const TABS=[['home','Visão geral','Painel'],['design','Modelos e molduras','Molduras'],['rules','Regras de uso','Regras'],['queue','Fila de impressão','Fila'],['prn','Tamanhos de impressão','Impressão'],['f34','Fotos 3x4','3x4'],['guests','Convidados','Convidados'],['bg','Plano de fundo','Fundo'],['conn','Conexão e QR Code','Conexão']];
 /* ---------- ícones vetoriais (SVG, traço 2px) ---------- */
 const ICONS={
 camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/>',
@@ -450,7 +461,8 @@ play:'<path d="M6 4l14 8-14 8z"/>',
 back:'<path d="M19 12H5M12 19l-7-7 7-7"/>',
 image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
 layout:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
-f34:'<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="2.8"/><path d="M7.5 18c.8-2.4 2.6-3.6 4.5-3.6s3.7 1.2 4.5 3.6"/>'};
+f34:'<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="2.8"/><path d="M7.5 18c.8-2.4 2.6-3.6 4.5-3.6s3.7 1.2 4.5 3.6"/>',
+bg:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>'};
 const ico=(k,c)=>`<svg class="i${c?' '+c:''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]||''}</svg>`;
 /* ---------- temas: claro · escuro · festa ---------- */
 const THEMES=[['claro','Claro','sun'],['escuro','Escuro','moon'],['festa','Festa','sparkles']],TCOL={claro:'#f2f3f9',escuro:'#0b0d13',festa:'#14072b'};
@@ -476,13 +488,14 @@ async function admin(){
   PR={...PRD,...((await kvGet('pr'))||(cfg.dup?{stN:2,stP:'10x15'}:{}))};
   F34={...F34,...((await kvGet('f34'))||{})};
   try{const pv=await kvGet('pv');if(pv){const im=await loadImg(pv);if(im){PVC=shrink(im,1200);pvv++}}}catch(e){}
+  try{const b=await kvGet('bg');if(b)BG={...BG,...b}}catch(e){}if(!BG.img&&BGG)BG={...BG,...BGG};applyBG(BG);
   app.innerHTML=`<div class=shell><aside class=sb><div class=logo><i>${ico('camera')}</i>Cabine de Fotos</div><nav id=nv></nav><div class=sbf><p id=sy class=m><i class="dot w"></i>Aguardando conexão</p><small id=en class=m></small></div></aside><section class=mn><header class=top><h1 id=tt></h1><div class=tr><span id=dr class=m></span>${thsw()}<button id=bl class=bell data-a=gq title="Fotos aguardando" aria-label="Fotos aguardando">${ico('bell')}<b id=bc hidden>0</b></button><button class=pri id=sv data-a=sv title="Salvar e publicar (Ctrl+S)">${ico('cloud')}<span class=lbl-sv>Salvar e publicar</span></button></div></header><div id=pg></div></section></div>`;
   app.onclick=act;app.oninput=inp;
   show(S.gid?'home':'conn');try{TW=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},3000)'])));TW.onmessage=()=>tick()}catch(e){timer=setInterval(tick,3000)}tick();
   try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}}
 addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'&&$('#sv')){e.preventDefault();save()}});
 function show(t){tab=t;$('#nv').innerHTML=TABS.map(([k,n,s])=>`<button data-a=tab data-k=${k} class="${k===t?'on':''}">${ico(k)}<span class=lg>${n}</span><span class=sh>${s}</span></button>`).join('');$('#tt').textContent=TABS.find(x=>x[0]===t)[1];$('#en').textContent=cfg.event;badge();page()}
-async function page(){const P={home,design,rules,prn,f34:f34tab,queue,guests,conn};const h=await P[tab]();if(!$('#pg'))return;$('#pg').innerHTML=h;if(tab==='design')prevNow();if(tab==='conn')mkqr();if(tab==='f34')upd34()}
+async function page(){const P={home,design,rules,prn,f34:f34tab,queue,guests,bg:bgtab,conn};const h=await P[tab]();if(!$('#pg'))return;$('#pg').innerHTML=h;if(tab==='design')prevNow();if(tab==='conn')mkqr();if(tab==='f34')upd34();if(tab==='bg')updBGp()}
 
 async function home(){
   const ps=await pAll(),pen=ps.filter(p=>p.status==='pending').length,ks=GG?Object.keys(GG.files).filter(k=>k.startsWith('c-')):[],gs=new Set(ks.map(k=>k.split('-')[1])).size,tp=TPL.find(t=>t.id===cfg.tpl),key=JSON.stringify(cfg)+!!FR.pola+pvv;
@@ -591,6 +604,21 @@ function print34(){
   for(let p=0;p<L.pages;p++){const pg=d.createElement('div');pg.className='pg';for(let i=0,n=Math.min(L.per,left);i<n;i++){const im=d.createElement('img');im.src=url;pg.appendChild(im)}left-=L.per;d.body.appendChild(pg)}
   const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
+/* ---------- plano de fundo do sistema ---------- */
+let BG={img:null,op:40,z:100,x:50,y:50},BGG=null;
+function applyBG(b){let e=$('#bgl');if(!e){e=document.createElement('div');e.id='bgl';document.body.prepend(e)}
+  const on=!!(b&&b.img);document.documentElement.classList.toggle('hasbg',on);e.style.display=on?'':'none';
+  if(on){e.style.backgroundImage='url("'+b.img+'")';e.style.backgroundPosition=b.x+'% '+b.y+'%';e.style.opacity=b.op/100;e.style.transform='scale('+b.z/100+')'}}
+function updBGp(){const e=$('#bgpv');if(!e)return;e.style.backgroundImage=BG.img?'url("'+BG.img+'")':'none';e.style.backgroundPosition=BG.x+'% '+BG.y+'%';e.style.opacity=BG.op/100;e.style.transform='scale('+BG.z/100+')'}
+async function bgtab(){
+  const RB=(k,t,a,b,u)=>`<label>${t}<output>${BG[k]}${u}</output><input type=range data-b=${k} data-u="${u}" min=${a} max=${b} value=${BG[k]}></label>`;
+  return `<div class=g2c><div class=card><h2>Plano de fundo do sistema</h2><p class=m style="font-size:13px;margin:-6px 0 0">Carregue uma imagem para aparecer atrás do painel. Ajuste a transparência e o zoom. As mudanças valem na hora.</p>
+  <label>Imagem de fundo<input type=file id=bgf accept=image/*></label>
+  ${RB('op','Opacidade da imagem (transparência)',0,100,'%')}${RB('z','Zoom',100,300,'%')}${RB('x','Posição horizontal',0,100,'%')}${RB('y','Posição vertical',0,100,'%')}
+  ${BG.img?`<button class=btn-del data-a=bgx>${ico('trash')}Remover imagem de fundo</button>`:''}
+  <label class=ck><input type=checkbox data-f=bgG ${cfg.bgG?'checked':''}> Mostrar também na tela dos convidados</label>
+  <p class=m style="font-size:12px;margin:6px 0 0">Para os convidados verem, clique em “Salvar e publicar”. No painel, o fundo fica salvo só neste computador.</p></div>
+  <div class=card><h2>Prévia</h2><div class=bgp><div id=bgpv></div><span>Exemplo de cartão sobre o fundo</span></div></div></div>`}
 function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.setValueAtTime(.2,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.5);o.start();o.stop(c.currentTime+.5);setTimeout(()=>c.close(),700)}catch(e){}}
 function toast(h){let b=$('#ts');if(!b){b=document.createElement('div');b.id='ts';b.onclick=act;document.body.appendChild(b)}const t=document.createElement('div');t.className='toast';t.innerHTML=h;t.addEventListener('click',e=>{if(e.target.closest('button'))setTimeout(()=>t.remove(),50)});b.appendChild(t);setTimeout(()=>t.remove(),25000)}
 function notify(nw){beep();const o=nw.length===1,fm=x=>x==='strip'?'Tirinha':'Polaroide',tx=o?nm(nw[0].k)+' · '+fm(nw[0].f):nw.length+' novas fotos';
@@ -625,6 +653,8 @@ async function inp(e){const t=e.target;
   if(t.dataset.g){const g=t.dataset.g;F34[g]=t.type==='checkbox'?t.checked:g==='qty'?Math.min(500,Math.max(1,parseInt(t.value)||1)):t.type==='range'?+t.value:t.value;
     if(t.type==='range'){const o=t.parentNode.querySelector('output');if(o)o.textContent=t.value+(t.dataset.u||'')}
     if(['qty','paper','gap','guides'].includes(g))saveF34();return upd34()}
+  if(t.id==='bgf'){const f=t.files[0];if(f){BG.img=shrink(await createImageBitmap(f),1600).toDataURL('image/jpeg',.8);await kvSet('bg',BG);applyBG(BG);if(cfg.bgG)dirty();await page()}return}
+  if(t.dataset.b){const b=t.dataset.b;BG[b]=+t.value;const o=t.parentNode.querySelector('output');if(o)o.textContent=t.value+(t.dataset.u||'');applyBG(BG);updBGp();kvSet('bg',BG);if(cfg.bgG&&BG.img)dirty();return}
   if(t.type==='file'){const f=t.files[0];if(!f)return;const k=t.dataset.k,W=k==='strip'?600:900,H=k==='strip'?1800:1100,b=await createImageBitmap(f),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(b,0,0,W,H);newFr[k]=c.toDataURL('image/png');FR[k]=await loadImg(newFr[k]);dirty();return prev()}
   const f=t.dataset.f;if(!f)return;
   cfg[f]=t.type==='checkbox'?t.checked:t.type==='number'?Math.max(1,+t.value||1):t.type==='range'?+t.value:t.value;if(t.type==='range'){const o=t.parentNode.querySelector('output');o&&(o.textContent=t.value)}dirty();if(f==='font'||t.type==='color'||f==='event'||f==='foot'||f==='dt')cfg.tpl=cfg.tpl;prev()}
@@ -634,6 +664,7 @@ async function act(e){
   if(a==='tab')return show(k);
   if(a==='q34'){F34.qty=k==='full'?Math.max(1,lay34().per):+k;const i=$('input[data-g=qty]');if(i)i.value=F34.qty;saveF34();return upd34()}
   if(a==='p34')return print34();
+  if(a==='bgx'){BG.img=null;await kvSet('bg',BG);applyBG(BG);if(cfg.bgG)dirty();return page()}
   if(a==='pvx')return setPV(null,1);
   if(a==='tpl'){const m=TPL.find(x=>x.id===k);if(!m)return;Object.assign(cfg,tc(m));dirty();if(dtab!=='tpl')return page();document.querySelectorAll('.tp').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return prevNow()}
   if(a==='sub'){dtab=k;return page()}
@@ -668,6 +699,7 @@ async function save(){
   try{const files={'config.json':{content:JSON.stringify(cfg)}};
     [['strip','r1'],['pola','r2']].forEach(([k,id])=>{const c=$('#'+id);if(c&&c.checked&&FR[k]&&!newFr[k]){files['frame-'+k+'.txt']=null;FR[k]=null}});
     for(const k in newFr)files['frame-'+k+'.txt']={content:newFr[k]};
+    if(cfg.bgG&&BG.img)files['bg.txt']={content:JSON.stringify({img:BG.img,op:BG.op,z:BG.z,x:BG.x,y:BG.y})};else{const g=await gGet();if(g.files['bg.txt'])files['bg.txt']=null}
     await gSet(files);newFr={};dirt=0;$('#dr').className='ok';$('#dr').innerHTML=ico('checkc')+'Publicado para os convidados'}
   catch(e){$('#dr').textContent='Falha ao salvar: '+e.message}
   b.disabled=false}
