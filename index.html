@@ -284,8 +284,8 @@ const stopCam=()=>{stream&&stream.getTracks().forEach(t=>t.stop());stream=null};
 function cover(x,s,bx,by,bw,bh){const r=Math.max(bw/s.width,bh/s.height),w=bw/r,h=bh/r;x.drawImage(s,(s.width-w)/2,(s.height-h)/2,w,h,bx,by,bw,bh)}
 const FONTS=[['Clássica (serifa)','Georgia,serif'],['Moderna','Arial,sans-serif'],['Divertida','"Trebuchet MS",sans-serif'],['Impacto','"Arial Black",Impact,sans-serif'],['Cursiva','"Brush Script MT",cursive'],['Máquina de escrever','"Courier New",monospace'],['Elegante','"Palatino Linotype",Palatino,serif']];
 const G='Georgia,serif',D='"Trebuchet MS",sans-serif',I='"Arial Black",Impact,sans-serif',A='Arial,sans-serif',FT='"Courier New",monospace',FB='"Brush Script MT",cursive',FE='"Palatino Linotype",Palatino,serif';
-const CATS=['Casamento','Aniversário','Infantil','Formatura','Corporativo','Festas','Sazonal','Amizade','Vintage','Polaroide'];
-const DECOS=[['none','Sem decoração'],['confetti','Confete'],['dots','Bolinhas'],['stars','Estrelas'],['lines','Linhas clássicas'],['bars','Faixas'],['neon','Neon'],['flags','Bandeirinhas'],['leaves','Folhagem'],['hearts','Corações'],['balloons','Balões'],['waves','Ondas'],['floral','Floral'],['gold','Glitter dourado'],['deco','Art déco'],['snow','Neve'],['rays','Raios'],['checker','Xadrez'],['film','Filme'],['bubbles','Bolhas'],['stripes','Listras'],['sunburst','Raios retrô'],['grain','Grão vintage'],['memphis','Memphis'],['sparkle','Brilhos Y2K'],['polka','Poá'],['tape','Fita washi'],['clouds','Nuvens'],['daisy','Margaridas']];
+const CATS=['Casamento','Aniversário','Infantil','Formatura','Corporativo','Festas','Sazonal','Amizade','Vintage','Polaroide','Molduras'];
+const DECOS=[['none','Sem decoração'],['confetti','Confete'],['dots','Bolinhas'],['stars','Estrelas'],['lines','Linhas clássicas'],['bars','Faixas'],['neon','Neon'],['flags','Bandeirinhas'],['leaves','Folhagem'],['hearts','Corações'],['balloons','Balões'],['waves','Ondas'],['floral','Floral'],['gold','Glitter dourado'],['deco','Art déco'],['snow','Neve'],['rays','Raios'],['checker','Xadrez'],['film','Filme'],['bubbles','Bolhas'],['stripes','Listras'],['sunburst','Raios retrô'],['grain','Grão vintage'],['memphis','Memphis'],['sparkle','Brilhos Y2K'],['polka','Poá'],['tape','Fita washi'],['clouds','Nuvens'],['daisy','Margaridas'],['fr-double','Moldura: Dupla'],['fr-round','Moldura: Arredondada'],['fr-scallop','Moldura: Festonada'],['fr-stamp','Moldura: Selo postal'],['fr-corners','Moldura: Cantos clássicos'],['fr-dash','Moldura: Tracejada'],['fr-wood','Moldura: Madeira'],['fr-gold2','Moldura: Ouro polido'],['fr-hearts2','Moldura: Corações'],['fr-stars2','Moldura: Estrelas'],['fr-bulbs','Moldura: Lâmpadas'],['fr-diamond','Moldura: Losangos'],['fr-ribbon','Moldura: Fitas de canto'],['fr-neon2','Moldura: Neon duplo'],['fr-paper','Moldura: Papel fotográfico'],['fr-lace','Moldura: Renda'],['fr-pixel','Moldura: Pixel'],['fr-rope','Moldura: Corda'],['fr-grad','Moldura: Degradê'],['fr-flower','Moldura: Flores'],['fr-leaf','Moldura: Folhas'],['fr-chain','Moldura: Corrente']];
 const TPL=[
 ['cas','Casamento Clássico','Casamento','#faf6ef','#efe3cf','#6b4f2a','#c9a24b',G,'lines'],
 ['boho','Boho Floral','Casamento','#f5efe6','#dfe8d5','#4d5b3a','#d9a38a',G,'floral'],
@@ -340,12 +340,60 @@ const TPL=[
 ['ppapel','Casal Papel P&B','Polaroide','#fafafa','#d4d4d4','#000000','#525252',FT,'grain'],
 ['pnam','Namorados Fofo','Polaroide','#ffe4e6','#fef9c3','#be123c','#f472b6',D,'polka'],
 ['pmono','Monocromático Filme','Polaroide','#262626','#404040','#f5f5f5','#a3a3a3',FT,'film'],
-['pbaby','Bebê Margarida','Polaroide','#fef9c3','#fde68a','#713f12','#facc15',D,'daisy']
+['pbaby','Bebê Margarida','Polaroide','#fef9c3','#fde68a','#713f12','#facc15',D,'daisy'],
+['mf-double','Moldura Dupla','Molduras','#faf6ef','#efe3cf','#6b4f2a','#b8892b',G,'fr-double'],
+['mf-round','Moldura Arredondada','Molduras','#e0f2fe','#fce7f3','#1e3a8a','#3b82f6',D,'fr-round'],
+['mf-scallop','Moldura Festonada','Molduras','#fff1f2','#ffe4e6','#9f1239','#fb7185',D,'fr-scallop'],
+['mf-stamp','Selo Postal','Molduras','#fde68a','#fdba74','#7c2d12','#b45309',FT,'fr-stamp'],
+['mf-corners','Cantos Clássicos','Molduras','#0f1d3d','#1e3a8a','#f5e6b3','#d4af37',G,'fr-corners'],
+['mf-dash','Moldura Tracejada','Molduras','#ecfccb','#d9f99d','#365314','#65a30d',D,'fr-dash'],
+['mf-wood','Moldura de Madeira','Molduras','#f5efe6','#e7dccb','#3e2c17','#8b5a2b',FE,'fr-wood'],
+['mf-gold2','Ouro Polido','Molduras','#1c1917','#292524','#f5e6b3','#d4af37',G,'fr-gold2'],
+['mf-hearts2','Moldura de Corações','Molduras','#ffe4e6','#fecdd3','#9f1239','#e11d48',FB,'fr-hearts2'],
+['mf-stars2','Moldura de Estrelas','Molduras','#1e1b4b','#312e81','#ffffff','#fde047',D,'fr-stars2'],
+['mf-bulbs','Lâmpadas de Cabaré','Molduras','#18181b','#3f0d12','#fef3c7','#fbbf24',I,'fr-bulbs'],
+['mf-diamond','Moldura de Losangos','Molduras','#fdf2f8','#ede9fe','#581c87','#a855f7',G,'fr-diamond'],
+['mf-ribbon','Fitas de Canto','Molduras','#dbeafe','#fef9c3','#1e3a8a','#ef4444',D,'fr-ribbon'],
+['mf-neon2','Neon Duplo','Molduras','#0b0b1a','#1a0b2e','#ffffff','#22d3ee',I,'fr-neon2'],
+['mf-paper','Papel Fotográfico','Molduras','#d6d3d1','#a8a29e','#1c1917','#fafaf9',FT,'fr-paper'],
+['mf-lace','Moldura de Renda','Molduras','#fdf4ff','#fae8ff','#701a75','#ffffff',G,'fr-lace'],
+['mf-pixel','Moldura Pixel','Molduras','#0f172a','#1e293b','#e2e8f0','#22c55e',FT,'fr-pixel'],
+['mf-rope','Moldura de Corda','Molduras','#bae6fd','#fde68a','#0c4a6e','#b45309',D,'fr-rope'],
+['mf-grad','Moldura Degradê','Molduras','#312e81','#831843','#ffffff','#f0abfc',D,'fr-grad'],
+['mf-flower','Moldura de Flores','Molduras','#ecfccb','#fce7f3','#14532d','#ec4899',FB,'fr-flower'],
+['mf-leaf','Moldura de Folhas','Molduras','#f0fdf4','#dcfce7','#14532d','#16a34a',G,'fr-leaf'],
+['mf-chain','Moldura de Corrente','Molduras','#e5e7eb','#9ca3af','#111827','#374151',A,'fr-chain']
 ].map(([id,n,k,c1,c2,text,acc,font,d])=>({id,n,k,c1,c2,text,acc,font,d}));
 const tc=t=>({tpl:t.id,color:t.c1,c2:t.c2,text:t.text,acc:t.acc,font:t.font,d:t.d});
 const spark=(x,cx,cy,r)=>{x.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4-Math.PI/2,d=i%2?r*.3:r;x.lineTo(cx+Math.cos(a)*d,cy+Math.sin(a)*d)}x.closePath();x.fill()};
 const heart=(x,cx,cy,s)=>{x.beginPath();x.moveTo(cx,cy+s*.42);x.bezierCurveTo(cx-s*.75,cy-s*.02,cx-s*.5,cy-s*.58,cx,cy-s*.2);x.bezierCurveTo(cx+s*.5,cy-s*.58,cx+s*.75,cy-s*.02,cx,cy+s*.42);x.fill()};
 function fronds(x,W,H){const cl=['#14532d','#166534','#15803d','#22c55e'];[[0,0,0],[W,H,Math.PI]].forEach(([ox,oy,o],j)=>{for(let i=0;i<8;i++){const L=190+(i%3)*28;x.save();x.translate(ox,oy);x.rotate(o+.06+i*.2);x.globalAlpha=.92;x.fillStyle=cl[(i+j)%4];x.beginPath();x.moveTo(0,0);x.quadraticCurveTo(L*.5,-34,L,0);x.quadraticCurveTo(L*.5,34,0,0);x.fill();x.globalAlpha=.35;x.strokeStyle='#fff';x.lineWidth=2;x.beginPath();x.moveTo(0,0);x.lineTo(L*.92,0);x.stroke();x.restore()}});x.globalAlpha=1}
+function perim(W,H,s,m,fn){let n=0;for(let px=m;px<=W-m+1;px+=s){fn(px,m,n++);fn(px,H-m,n++)}for(let py=m+s;py<H-m;py+=s){fn(m,py,n++);fn(W-m,py,n++)}}
+function frame(x,W,H,t){const d=t.d.slice(3),a=t.acc,tx=t.text,R=(i,w)=>x.strokeRect(i,i,W-2*i,H-2*i);x.save();x.lineJoin='round';x.strokeStyle=a;x.fillStyle=a;
+ switch(d){
+ case'double':x.lineWidth=6;R(12);x.lineWidth=2;R(26);[[12,12],[W-12,12],[12,H-12],[W-12,H-12]].forEach(([px,py])=>x.fillRect(px-7,py-7,14,14));break;
+ case'round':x.lineWidth=16;x.beginPath();x.roundRect(12,12,W-24,H-24,46);x.stroke();x.strokeStyle='#fff';x.globalAlpha=.6;x.lineWidth=3;x.beginPath();x.roundRect(24,24,W-48,H-48,36);x.stroke();break;
+ case'scallop':perim(W,H,34,16,(px,py)=>{x.beginPath();x.arc(px,py,17,0,7);x.fill()});x.strokeStyle='#fff';x.lineWidth=3;x.globalAlpha=.7;R(30);break;
+ case'stamp':x.fillStyle='#fffdf5';x.fillRect(0,0,W,30);x.fillRect(0,H-30,W,30);x.fillRect(0,0,30,H);x.fillRect(W-30,0,30,H);x.fillStyle=t.c1;perim(W,H,30,2,(px,py)=>{x.beginPath();x.arc(px,py,9,0,7);x.fill()});x.lineWidth=2;x.strokeStyle=a;R(33);break;
+ case'corners':x.lineWidth=9;x.lineCap='round';[[16,16,1,1],[W-16,16,-1,1],[16,H-16,1,-1],[W-16,H-16,-1,-1]].forEach(([px,py,sx,sy])=>{x.beginPath();x.moveTo(px,py+sy*110);x.lineTo(px,py);x.lineTo(px+sx*110,py);x.stroke();x.save();x.translate(px+sx*22,py+sy*22);x.rotate(.785);x.fillRect(-7,-7,14,14);x.restore()});x.lineWidth=2;R(26);break;
+ case'dash':x.lineWidth=7;x.setLineDash([24,14]);R(20);x.lineWidth=2;x.setLineDash([]);R(8);break;
+ case'wood':x.lineWidth=30;x.strokeStyle='#8b5a2b';R(15);x.lineWidth=1.5;x.strokeStyle='#5a3a1a';x.globalAlpha=.5;for(let i=4;i<28;i+=5)R(i);x.globalAlpha=1;x.lineWidth=3;x.strokeStyle='#3b2410';R(30);R(1);break;
+ case'gold2':{const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,'#f7e08a');g.addColorStop(.35,'#b8860b');g.addColorStop(.65,'#f7e08a');g.addColorStop(1,'#a37410');x.strokeStyle=g;x.lineWidth=26;R(14);x.lineWidth=2;x.strokeStyle='#5c3d06';R(28);R(1);break}
+ case'hearts2':perim(W,H,44,18,(px,py)=>heart(x,px,py,28));break;
+ case'stars2':perim(W,H,42,18,(px,py,n)=>{x.fillStyle=n%2?a:'#fff';spark(x,px,py,15)});break;
+ case'bulbs':x.lineWidth=3;R(18);perim(W,H,38,18,(px,py,n)=>{x.shadowColor=n%2?a:'#fff';x.shadowBlur=14;x.fillStyle=n%2?a:'#fff';x.beginPath();x.arc(px,py,9,0,7);x.fill()});break;
+ case'diamond':perim(W,H,36,16,(px,py,n)=>{x.fillStyle=n%2?a:tx;x.save();x.translate(px,py);x.rotate(.785);x.fillRect(-9,-9,18,18);x.restore()});break;
+ case'ribbon':[[0,0,1,1],[W,0,-1,1],[0,H,1,-1],[W,H,-1,-1]].forEach(([px,py,sx,sy],i)=>{x.fillStyle=i%2?'#fff':a;x.beginPath();x.moveTo(px,py);x.lineTo(px+sx*130,py);x.lineTo(px,py+sy*130);x.fill();x.fillStyle=i%2?a:'#fff';x.globalAlpha=.8;x.beginPath();x.moveTo(px+sx*60,py);x.lineTo(px+sx*95,py);x.lineTo(px,py+sy*95);x.lineTo(px,py+sy*60);x.fill();x.globalAlpha=1});x.lineWidth=3;R(14);break;
+ case'neon2':x.shadowColor=a;x.shadowBlur=26;x.lineWidth=7;x.beginPath();x.roundRect(14,14,W-28,H-28,30);x.stroke();x.shadowColor='#f0abfc';x.strokeStyle='#f0abfc';x.lineWidth=3;x.beginPath();x.roundRect(28,28,W-56,H-56,22);x.stroke();break;
+ case'paper':x.lineWidth=34;x.strokeStyle=a;x.shadowColor='rgba(0,0,0,.4)';x.shadowBlur=12;R(17);x.shadowBlur=0;x.lineWidth=1.5;x.strokeStyle='#a8a29e';R(34);break;
+ case'lace':x.fillStyle='#fff';perim(W,H,28,15,(px,py)=>{x.beginPath();x.arc(px,py,13,0,7);x.fill()});x.fillStyle=a;x.globalAlpha=.9;perim(W,H,28,15,(px,py)=>{x.beginPath();x.arc(px,py,5,0,7);x.fillStyle=t.c1;x.fill()});x.globalAlpha=1;x.strokeStyle='#fff';x.lineWidth=3;R(32);break;
+ case'pixel':perim(W,H,18,9,(px,py,n)=>{x.fillStyle=n%3?a:tx;x.fillRect(px-9,py-9,18,18)});break;
+ case'rope':x.lineWidth=18;x.strokeStyle='#92400e';R(15);x.strokeStyle=a;x.lineWidth=18;x.setLineDash([12,12]);R(15);x.strokeStyle='#fde68a';x.lineDashOffset=12;x.globalAlpha=.8;R(15);break;
+ case'grad':{const g=x.createLinearGradient(0,0,W,0);g.addColorStop(0,a);g.addColorStop(.5,'#22d3ee');g.addColorStop(1,'#f472b6');x.strokeStyle=g;x.lineWidth=26;R(13);x.strokeStyle='#fff';x.lineWidth=2;x.globalAlpha=.7;R(28);break}
+ case'flower':perim(W,H,46,18,(px,py,n)=>{for(let k=0;k<6;k++){const q=k*1.047;x.fillStyle=n%2?a:'#fff';x.beginPath();x.ellipse(px+Math.cos(q)*8,py+Math.sin(q)*8,8,5,q,0,7);x.fill()}x.fillStyle='#facc15';x.beginPath();x.arc(px,py,5,0,7);x.fill()});x.strokeStyle='#16a34a';x.lineWidth=3;R(18);break;
+ case'leaf':perim(W,H,34,17,(px,py,n)=>{x.save();x.translate(px,py);x.rotate(n%2?.8:-.8);x.fillStyle=n%3?a:'#4ade80';x.beginPath();x.ellipse(0,0,15,7,0,0,7);x.fill();x.restore()});break;
+ case'chain':x.lineWidth=7;perim(W,H,40,18,(px,py,n)=>{x.beginPath();if(n%4<2)x.ellipse(px,py,16,8,0,0,7);else x.ellipse(px,py,8,16,0,0,7);x.stroke()});break}
+ x.restore()}
 function deco(x,W,H,t){
   let sd=7;const r=()=>(sd=(sd*9301+49297)%233280)/233280,pal=[t.acc,'#ffffff',t.c2,'#fde047'];
   x.save();
@@ -382,7 +430,7 @@ function deco(x,W,H,t){
   if(t.d==='tape'){[[70,40,-.6],[W-70,40,.6],[70,H-40,.6],[W-70,H-40,-.6]].forEach(([px,py,a],i)=>{x.save();x.translate(px,py);x.rotate(a);x.globalAlpha=.75;x.fillStyle=i%2?t.acc:'#fde68a';x.fillRect(-60,-18,120,36);x.globalAlpha=.3;x.fillStyle='#fff';for(let k=-50;k<50;k+=20)x.fillRect(k,-18,8,36);x.restore()})}
   if(t.d==='clouds'){x.fillStyle='#fff';x.globalAlpha=.7;[[90,60,1],[W-110,H-70,1.2],[W-70,24,.7],[60,H-40,.8],[W/2,H-24,.9]].forEach(([px,py,k])=>{[[0,0,34],[-34,10,24],[34,10,26],[10,-14,26]].forEach(([dx,dy,rr])=>{x.beginPath();x.arc(px+dx*k,py+dy*k,rr*k,0,7);x.fill()})});x.globalAlpha=1}
   if(t.d==='daisy'){for(let i=0;i<16;i++){const px=r()*W,py=r()*H,s=14+r()*16;for(let k=0;k<8;k++){const a=k*Math.PI/4;x.globalAlpha=.9;x.fillStyle=i%3?'#fff':'#fef3c7';x.beginPath();x.ellipse(px+Math.cos(a)*s,py+Math.sin(a)*s,s*.7,s*.32,a,0,7);x.fill()}x.globalAlpha=1;x.fillStyle=t.acc;x.beginPath();x.arc(px,py,s*.4,0,7);x.fill()}}
-  x.restore()}
+  x.restore();if(t.d.slice(0,3)==='fr-')frame(x,W,H,t)}
 function compose(f,s,c=cfg){const strip=f==='strip',W=strip?600:900,H=strip?1800:1100,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
   const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,c.color);g.addColorStop(1,c.c2||c.color);x.fillStyle=g;x.fillRect(0,0,W,H);
   if(FR.bg&&c.bo>0)drawBg(x,W,H,c);deco(x,W,H,c);
@@ -675,8 +723,37 @@ async function guests(){
   const c={};if(GG)Object.keys(GG.files).forEach(n=>{const m=n.match(/^c-([a-z0-9]+)-\d+\.txt$/);if(m)c[m[1]]=(c[m[1]]||0)+1});
   const ks=Object.keys(c);
   return `<div class=card><h2>Convidados</h2><table><tr><th>Convidado</th><th>Fotos usadas</th><th></th></tr>${ks.map(k=>`<tr><td>${esc(k)}</td><td>${c[k]} / ${cfg.max}</td><td><button class=sm data-a=zr data-k="${esc(k)}">${ico('reset')}Zerar</button></td></tr>`).join('')||'<tr><td colspan=3 class=m>Nenhum convidado ainda.</td></tr>'}</table><p><button data-a=za>${ico('reset')}Zerar todos (novo evento)</button></p></div>`}
+/* ---------- BACKUP GLOBAL ---------- */
+async function exportBackup(withPh){
+  const fr={};['strip','pola','bg'].forEach(k=>{if(FR[k])fr[k]=FR[k].src});
+  const data={app:'cabine-de-fotos',v:1,at:new Date().toISOString(),sync:S,cfg,frames:fr,bg:BG,pr:PR,f34:{qty:F34.qty,paper:F34.paper,gap:F34.gap,guides:F34.guides},auto:AUTO,photos:withPh?await pAll():[]};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
+  a.download='cabine-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
+async function importBackup(file){
+  const m=$('#bkm');const say=(t,c)=>{if(m){m.className=c||'m';m.textContent=t}};
+  let d;try{d=JSON.parse(await file.text())}catch(e){return say('Arquivo inválido.','err')}
+  if(!d||d.app!=='cabine-de-fotos')return say('Este arquivo não é um backup da Cabine de Fotos.','err');
+  if(!confirm('Restaurar o backup de '+(d.at||'').slice(0,10)+'? Isso substitui token, Gist, configurações, molduras e fundo deste computador.'))return;
+  try{
+    say('Restaurando…');
+    if(d.sync&&d.sync.gid){S={tok:d.sync.tok||'',gid:d.sync.gid};await kvSet('sync',S)}
+    if(d.bg)await kvSet('bg',d.bg);if(d.pr)await kvSet('pr',d.pr);if(d.f34)await kvSet('f34',d.f34);if(typeof d.auto==='boolean')await kvSet('auto',d.auto);
+    for(const p of d.photos||[])await pPut(p);
+    if(S.gid&&d.cfg){
+      const files={'config.json':{content:JSON.stringify({...DEF,...d.cfg})}};
+      for(const k of['strip','pola','bg'])if(d.frames&&d.frames[k])files['frame-'+k+'.txt']={content:d.frames[k]};
+      if(d.cfg.bgG&&d.bg&&d.bg.img)files['bg.txt']={content:JSON.stringify({img:d.bg.img,op:d.bg.op,z:d.bg.z,x:d.bg.x,y:d.bg.y})};
+      try{await gSet(files)}catch(e){alert('Backup restaurado localmente, mas não consegui publicar no Gist ('+e.message+'). Confira o token.')}
+    }
+    await admin()
+  }catch(e){say('Falha ao restaurar: '+e.message,'err')}}
 async function conn(){
   return `<div class=grid2><div class=card><h2>Sincronização (GitHub Gist)</h2><label>Token do GitHub (classic, permissão gist)<input id=tk type=password value="${esc(S.tok||'')}"></label><label>ID do Gist<input id=gi value="${esc(S.gid||'')}" placeholder="vazio = criar um novo"></label><button class=pri data-a=ss>${ico('cloud')}Salvar / criar Gist</button><p id=cm class=m></p></div>
+  <div class=card><h2>Backup global</h2><p class=m style="font-size:13px;margin:-6px 0 0">Guarda token e ID do Gist, modelo, textos, molduras PNG, fundo, impressão e 3x4 em um único arquivo. Para usar em outra máquina: abra #admin, vá em Conexão e restaure o arquivo.</p>
+  <label class=ck><input type=checkbox id=bkp> Incluir fotos da fila/arquivo deste computador</label>
+  <button class=pri data-a=bkx>${ico('download')}Baixar backup</button>
+  <label>Restaurar backup<input type=file id=bkf accept=".json,application/json"></label><p id=bkm class=m></p>
+  <p class=warn style="font-size:12px;margin:6px 0 0;color:var(--wa)">O arquivo contém o token do GitHub. Guarde-o em local seguro e não o compartilhe.</p></div>
   <div class=card><h2>QR Code dos convidados</h2><label>Endereço desta página (HTTPS)<input id=lk value="${esc(location.href.split('#')[0])}"></label><div id=qr></div><button data-a=qp>${ico('print')}Imprimir QR</button></div></div>`}
 
 const mkqr=()=>{const q=$('#qr');if(!q)return;q.innerHTML='';if(S.gid&&window.QRCode)new QRCode(q,{text:$('#lk').value.trim()+'#g='+S.gid+'.'+S.tok,width:240,height:240,correctLevel:QRCode.CorrectLevel.L})};
@@ -689,6 +766,7 @@ async function thumbs(){if(!$('#tg'))return;const v=++tgv;for(const t of TPL){if
 
 async function inp(e){const t=e.target;
   if(t.dataset.p){const v=t.value;PR[t.dataset.p]=v!==''&&!isNaN(+v)?+v:v;kvSet('pr',PR);return prUpd()}if(t.id==='lk')return mkqr();if(t.id==='sq')return filt();
+  if(t.id==='bkf'){const f=t.files[0];if(f)await importBackup(f);t.value='';return}
   if(t.id==='pvf'){const f=t.files[0];if(f){newFr.bg=shrink(await createImageBitmap(f),1600).toDataURL('image/jpeg',.85);FR.bg=await loadImg(newFr.bg);delete delFr.bg;bgClear();dirty();await page()}return}
   if(t.id==='f34f'){const f=t.files[0];if(f){F34I=shrink(await createImageBitmap(f),2400);F34.z=100;F34.ox=0;F34.oy=0;await page()}return}
   if(t.dataset.g){const g=t.dataset.g;F34[g]=t.type==='checkbox'?t.checked:g==='qty'?Math.min(500,Math.max(1,parseInt(t.value)||1)):t.type==='range'?+t.value:t.value;
@@ -703,6 +781,7 @@ async function act(e){
   const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,k=t.dataset.k;
   try{
   if(a==='tab')return show(k);
+  if(a==='bkx')return exportBackup(!!($('#bkp')&&$('#bkp').checked));
   if(a==='q34'){F34.qty=k==='full'?Math.max(1,lay34().per):+k;const i=$('input[data-g=qty]');if(i)i.value=F34.qty;saveF34();return upd34()}
   if(a==='p34')return print34();
   if(a==='frx'){if(!confirm(k==='bg'?'Remover a foto de fundo das molduras?':'Remover a moldura PNG da '+(k==='strip'?'tirinha':'polaroide')+'?'))return;delete newFr[k];FR[k]=null;delFr[k]=1;bgClear();dirty();return page()}
