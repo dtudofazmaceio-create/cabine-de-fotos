@@ -754,7 +754,7 @@ async function conn(){
   <button class=pri data-a=bkx>${ico('download')}Baixar backup</button>
   <label>Restaurar backup<input type=file id=bkf accept=".json,application/json"></label><p id=bkm class=m></p>
   <p class=warn style="font-size:12px;margin:6px 0 0;color:var(--wa)">O arquivo contém o token do GitHub. Guarde-o em local seguro e não o compartilhe.</p></div>
-  <div class=card><h2>QR Code dos convidados</h2><label>Endereço desta página (HTTPS)<input id=lk value="${esc(location.href.split('#')[0])}"></label><div id=qr></div><button data-a=qp>${ico('print')}Imprimir QR</button></div></div>`}
+  <div class=card><h2>QR Code dos convidados</h2><label>Endereço desta página (HTTPS)<input id=lk value="${esc(location.href.split('#')[0])}"></label><div id=qr></div><button class=pri data-a=qd>${ico('download')}Baixar cartão do QR</button><button data-a=qp>${ico('print')}Imprimir QR</button></div></div>`}
 
 const mkqr=()=>{const q=$('#qr');if(!q)return;q.innerHTML='';if(S.gid&&window.QRCode)new QRCode(q,{text:$('#lk').value.trim()+'#g='+S.gid+'.'+S.tok,width:240,height:240,correctLevel:QRCode.CorrectLevel.L})};
 let DM,PVC=null;const defDM=()=>{if(!DM){DM=document.createElement('canvas');DM.width=800;DM.height=600;const x=DM.getContext('2d'),g=x.createLinearGradient(0,0,800,600);g.addColorStop(0,'#fbcfe8');g.addColorStop(1,'#93c5fd');x.fillStyle=g;x.fillRect(0,0,800,600);x.fillStyle='rgba(255,255,255,.65)';x.beginPath();x.arc(400,250,95,0,7);x.fill();x.beginPath();x.ellipse(400,600,180,210,0,Math.PI,0);x.fill()}return DM};
@@ -777,6 +777,63 @@ async function inp(e){const t=e.target;
   if(t.type==='file'){const f=t.files[0];if(!f)return;const k=t.dataset.k,W=k==='strip'?600:900,H=k==='strip'?1800:1100,b=await createImageBitmap(f),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(b,0,0,W,H);newFr[k]=c.toDataURL('image/png');FR[k]=await loadImg(newFr[k]);dirty();return page()}
   const f=t.dataset.f;if(!f)return;
   cfg[f]=t.type==='checkbox'?t.checked:t.type==='number'?Math.max(1,+t.value||1):t.type==='range'?+t.value:t.value;if(t.type==='range'){const o=t.parentNode.querySelector('output');o&&(o.textContent=t.value)}dirty();if(f==='font'||t.type==='color'||f==='event'||f==='foot'||f==='dt')cfg.tpl=cfg.tpl;prev()}
+/* ---------- cartão do QR Code (impressão/download) ---------- */
+function qrCard(){
+  const c=cfg,W=1240,H=1754,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  const SANS='Inter,"Segoe UI",Roboto,Arial,sans-serif',hx=h=>{h=String(h||'#000').replace('#','');if(h.length===3)h=h.replace(/./g,'$&$&');const n=parseInt(h,16);return[n>>16&255,n>>8&255,n&255]},
+  lum=h=>{const[r,g,b]=hx(h).map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*r+.7152*g+.0722*b},
+  onC=h=>lum(h)>.5?'#111827':'#ffffff',ink=lum(c.color)<.35?c.color:lum(c.c2)<.35?c.c2:'#1f2937',
+  rr=(a,b,w,h,r)=>{x.beginPath();x.roundRect(a,b,w,h,r)},
+  fit=(t,font,max,size)=>{do{x.font=font.replace('{s}',size);size-=4}while(x.measureText(t).width>max&&size>30);return x.font};
+  /* fundo: gradiente do tema + decoração + foto de fundo */
+  const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,c.color);g.addColorStop(1,c.c2||c.color);x.fillStyle=g;x.fillRect(0,0,W,H);
+  if(FR.bg&&c.bo>0)drawBg(x,W,H,c);
+  deco(x,W,H,{...c,d:c.d.slice(0,3)==='fr-'?c.d:c.d});
+  /* brilho suave atrás do QR */
+  const rg=x.createRadialGradient(W/2,900,60,W/2,900,760);rg.addColorStop(0,'rgba(255,255,255,.30)');rg.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=rg;x.fillRect(0,0,W,H);
+  /* selo "Cabine de Fotos" */
+  x.save();x.font='700 32px '+SANS;if('letterSpacing' in x)x.letterSpacing='6px';const lab='CABINE DE FOTOS',lw=x.measureText(lab).width,pw=lw+120,px=(W-pw)/2;
+  rr(px,100,pw,84,42);x.fillStyle='rgba(255,255,255,.20)';x.fill();x.strokeStyle='rgba(255,255,255,.55)';x.lineWidth=2;x.stroke();
+  /* ícone câmera */
+  x.strokeStyle=c.text;x.lineWidth=4;x.lineJoin='round';const cx=px+52,cy=142;rr(cx-18,cy-11,36,26,6);x.stroke();x.beginPath();x.moveTo(cx-8,cy-11);x.lineTo(cx-5,cy-17);x.lineTo(cx+5,cy-17);x.lineTo(cx+8,cy-11);x.stroke();x.beginPath();x.arc(cx,cy+2,7,0,7);x.stroke();
+  x.fillStyle=c.text;x.textAlign='left';x.textBaseline='middle';x.fillText(lab,px+88,144);x.restore();
+  /* título */
+  const T=c.up?String(c.event).toUpperCase():c.event;x.save();x.fillStyle=c.text;x.textAlign='center';x.textBaseline='alphabetic';
+  if(c.d==='neon'){x.shadowColor=c.acc;x.shadowBlur=26}
+  fit(T,'700 {s}px '+c.font,1020,150);x.fillText(T,W/2,380,1020);x.restore();
+  /* divisor com losango */
+  x.save();x.strokeStyle=c.acc;x.fillStyle=c.acc;x.lineWidth=5;x.lineCap='round';x.beginPath();x.moveTo(W/2-250,440);x.lineTo(W/2-34,440);x.moveTo(W/2+34,440);x.lineTo(W/2+250,440);x.stroke();x.translate(W/2,440);x.rotate(Math.PI/4);x.fillRect(-11,-11,22,22);x.restore();
+  x.save();x.fillStyle=c.text;x.textAlign='center';x.font='600 54px '+SANS;x.fillText('Escaneie e tire sua foto!',W/2,530);x.restore();
+  /* painel do QR */
+  const P=760,qx=(W-P)/2,qy=590;
+  x.save();x.shadowColor='rgba(0,0,0,.38)';x.shadowBlur=60;x.shadowOffsetY=24;rr(qx,qy,P,P,64);x.fillStyle='#fff';x.fill();x.restore();
+  /* QR em alta resolução */
+  const tmp=document.createElement('div');tmp.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(tmp);
+  const link=$('#lk').value.trim()+'#g='+S.gid+'.'+S.tok;new QRCode(tmp,{text:link,width:600,height:600,correctLevel:QRCode.CorrectLevel.L});
+  const q=tmp.querySelector('canvas');x.imageSmoothingEnabled=false;x.drawImage(q,qx+80,qy+80,600,600);x.imageSmoothingEnabled=true;tmp.remove();
+  /* cantos de mira */
+  x.save();x.strokeStyle=ink;x.lineWidth=14;x.lineCap='round';x.lineJoin='round';const m=34,L=62;
+  [[qx+m,qy+m,1,1],[qx+P-m,qy+m,-1,1],[qx+m,qy+P-m,1,-1],[qx+P-m,qy+P-m,-1,-1]].forEach(([a,b,sx,sy])=>{x.beginPath();x.moveTo(a,b+sy*L);x.lineTo(a,b);x.lineTo(a+sx*L,b);x.stroke()});x.restore();
+  /* pílula sobreposta */
+  x.save();x.font='800 38px '+SANS;if('letterSpacing' in x)x.letterSpacing='4px';const t2='APONTE A CÂMERA',w2=x.measureText(t2).width+110,x2=(W-w2)/2,y2=qy+P-46;
+  x.shadowColor='rgba(0,0,0,.35)';x.shadowBlur=24;x.shadowOffsetY=10;rr(x2,y2,w2,92,46);x.fillStyle=c.acc;x.fill();x.shadowColor='transparent';x.lineWidth=6;x.strokeStyle='#fff';x.stroke();
+  x.fillStyle=onC(c.acc);x.textAlign='center';x.textBaseline='middle';x.fillText(t2,W/2+2,y2+47);x.restore();
+  /* passos */
+  const sy0=1420,sh=190,sx0=90,sw=W-180;
+  x.save();x.shadowColor='rgba(0,0,0,.25)';x.shadowBlur=40;x.shadowOffsetY=14;rr(sx0,sy0,sw,sh,44);x.fillStyle='rgba(255,255,255,.95)';x.fill();x.restore();
+  const fm=[c.strip&&'Tirinha',c.pola&&'Polaroide'].filter(Boolean).join(' ou ')||'foto',
+  steps=[['1','Escaneie','com a câmera do celular'],['2','Digite seu nome','e escolha '+fm.toLowerCase()],['3','Sorria!','sua foto sai impressa']];
+  const cw=sw/3;steps.forEach(([n,a,b],i)=>{const mx=sx0+cw*i+cw/2;
+    if(i){x.strokeStyle='#e5e7eb';x.lineWidth=3;x.beginPath();x.moveTo(sx0+cw*i,sy0+36);x.lineTo(sx0+cw*i,sy0+sh-36);x.stroke()}
+    x.save();x.fillStyle=ink;x.beginPath();x.arc(mx,sy0+56,34,0,7);x.fill();x.fillStyle=onC(ink);x.font='800 38px '+SANS;x.textAlign='center';x.textBaseline='middle';x.fillText(n,mx,sy0+58);
+    x.fillStyle='#111827';x.textBaseline='alphabetic';x.font='700 31px '+SANS;x.fillText(a,mx,sy0+130,cw-40);x.fillStyle='#6b7280';x.font='400 24px '+SANS;x.fillText(b,mx,sy0+165,cw-30);x.restore()});
+  /* rodapé */
+  x.save();x.fillStyle=c.text;x.globalAlpha=.92;x.textAlign='center';x.font='500 30px '+SANS;
+  const ft=c.foot||('Até '+c.max+' foto'+(c.max>1?'s':'')+' por convidado');x.fillText(ft,W/2,1676,W-160);
+  if(c.dt){x.globalAlpha=.7;x.font='400 26px '+SANS;x.fillText(c.dt,W/2,1716,W-160)}x.restore();
+  if(FR.pola&&0)x.drawImage(FR.pola,0,0,W,H);
+  return cv}
+
 async function act(e){
   const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,k=t.dataset.k;
   try{
@@ -809,7 +866,8 @@ async function act(e){
   if(a==='rm'){await pDel(k);await badge();return page()}
   if(a==='lq'){if(confirm('Apagar todas as fotos guardadas neste computador?')){for(const p of await pAll())await pDel(p.name);page()}return}
   if(a==='zr'||a==='za'){if(!S.gid||(a==='za'&&!confirm('Liberar a cota de todos os convidados?')))return;const g=await gGet(),d={};Object.keys(g.files).filter(n=>a==='za'?n.startsWith('c-'):n.startsWith('c-'+k+'-')).forEach(n=>d[n]=null);if(Object.keys(d).length)await gSet(d);return tick()}
-  if(a==='qp'){const q=$('#qr canvas');if(!q)return;const c=document.createElement('canvas');c.width=600;c.height=800;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,600,800);x.fillStyle='#000';x.textAlign='center';x.font='700 44px Georgia,serif';x.fillText(cfg.event,300,90,540);x.font='30px Georgia,serif';x.fillText('Escaneie e tire sua foto!',300,150,540);x.drawImage(q,60,200,480,480);return printImg(c.toDataURL(),'qr')}
+  if(a==='qp'){if(!S.gid)return;return printImg(qrCard().toDataURL('image/png'),'qr')}
+  if(a==='qd'){if(!S.gid)return;const cv=qrCard(),a2=document.createElement('a');a2.href=cv.toDataURL('image/png');a2.download='qrcode-'+String(cfg.event).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';document.body.appendChild(a2);a2.click();return setTimeout(()=>a2.remove(),500)}
   if(a==='ss'){S={tok:$('#tk').value.trim(),gid:$('#gi').value.trim()};
     if(!S.gid)S.gid=(await gh('POST','',{description:'Cabine de Fotos',public:false,files:{'config.json':{content:JSON.stringify(cfg)}}})).id;else await gGet();
     await kvSet('sync',S);return admin()}
