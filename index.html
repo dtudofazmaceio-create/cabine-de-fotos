@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Cabine de Fotos</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--m:#666;--c:#f4f4f6;--b:#d9d9e0;--ac:#7c3aed;--er:#c62828}
+@media(prefers-color-scheme:dark){:root{--bg:#121214;--fg:#f2f2f2;--m:#a0a0a8;--c:#1e1e22;--b:#34343a;--ac:#a78bfa;--er:#ef9a9a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,sans-serif}
+main{max-width:480px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:8px 0}h2{font-size:17px;margin:0 0 10px}
+.card{background:var(--c);border:1px solid var(--b);border-radius:12px;padding:14px;margin:12px 0}
+label{display:block;font-size:14px;color:var(--m);margin:8px 0}
+input:not([type=checkbox]):not([type=color]){display:block;width:100%;padding:10px;margin-top:4px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--fg);font-size:16px}
+input[type=color]{display:block;width:100%;height:40px;margin-top:4px}
+button{font:inherit;padding:11px 14px;border-radius:10px;border:1px solid var(--b);background:var(--bg);color:var(--fg);cursor:pointer;margin:4px 4px 4px 0}
+button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}button:disabled{opacity:.5}
+.row,.fm{display:flex;gap:8px}.row>*,.fb{flex:1}.fb{text-align:center}.fb small{display:block;color:var(--m)}
+.m{color:var(--m)}.err{color:var(--er)}
+.cam{position:relative;aspect-ratio:4/3;background:#000;border-radius:12px;overflow:hidden}
+.cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:110px;color:#fff;text-shadow:0 2px 12px #000}
+#fl{position:absolute;inset:0;background:#fff;opacity:0;transition:opacity .3s;pointer-events:none}
+.res{max-width:100%;max-height:60vh;border-radius:8px;border:1px solid var(--b);display:block;margin:8px auto}
+.q{display:flex;gap:10px;align-items:center;border-top:1px solid var(--b);padding:8px 0}.q img{width:48px;height:64px;object-fit:cover;border-radius:4px}.q div{flex:1;font-size:14px}
+.q a{font-size:14px;color:var(--ac)}
+#pv img{width:48%;vertical-align:top;border:1px solid var(--b)}
+</style></head><body><main id="app"></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms)),app=$('#app');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const DEF={event:'Minha Festa',color:'#1f2937',text:'#ffffff',max:2,strip:true,pola:true,foot:'',confirm:true,dup:false};
+let db,S={},cfg={...DEF},FR={},stream,fmt,guest,timer,busy=0,newFr={};
+
+/* ---------- IndexedDB (credenciais, config local e fila/arquivo da estação) ---------- */
+const openDb=()=>new Promise((ok,ko)=>{const r=indexedDB.open('cabine',1);r.onupgradeneeded=()=>{r.result.createObjectStore('kv');r.result.createObjectStore('photos',{keyPath:'name'})};r.onsuccess=()=>{db=r.result;ok()};r.onerror=()=>ko(r.error)});
+const rq=r=>new Promise((ok,ko)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)});
+const st=(s,w)=>db.transaction(s,w?'readwrite':'readonly').objectStore(s);
+const kvGet=k=>rq(st('kv').get(k)),kvSet=(k,v)=>rq(st('kv',1).put(v,k));
+const pAll=()=>rq(st('photos').getAll()),pGet=n=>rq(st('photos').get(n)),pPut=p=>rq(st('photos',1).put(p)),pDel=n=>rq(st('photos',1).delete(n));
+
+/* ---------- GitHub Gist (sincronização entre aparelhos) ---------- */
+const gh=(m,path,body)=>fetch('https://api.github.com/gists'+(path||''),{method:m,headers:{Authorization:'Bearer '+S.tok,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:body&&JSON.stringify(body)}).then(r=>{if(!r.ok)throw new Error('GitHub '+r.status);return r.json()});
+const gGet=()=>gh('GET','/'+S.gid),gSet=files=>gh('PATCH','/'+S.gid,{files});
+const txt=f=>f.truncated?fetch(f.raw_url).then(r=>r.text()):f.content;
+const loadImg=u=>new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=u});
+const countOf=(g,k)=>Object.keys(g.files).filter(n=>n.startsWith('c-'+k+'-')).length;
+async function loadCfg(){const g=await gGet(),f=g.files;
+  cfg={...DEF,...JSON.parse(f['config.json']?await txt(f['config.json']):'{}')};
+  for(const k of['strip','pola']){FR[k]=null;const ff=f['frame-'+k+'.txt'];if(ff){const u=await txt(ff);if(u.startsWith('data:'))FR[k]=await loadImg(u)}}
+  return g}
+
+/* ---------- utilitários ---------- */
+function printImg(src,kind){const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);const d=f.contentDocument;d.open();const dup=cfg.dup&&kind==='strip',im1='<img src="'+src+'">';d.write('<style>@page{margin:0'+(cfg.dup?';size:4in 6in':'')+'}body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center}img{max-width:100%;max-height:100vh}'+(dup?'img{width:50%;height:100vh;object-fit:contain}':'')+'</style>'+im1+(dup?im1:''));d.close();const im=d.querySelector('img'),go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};im.complete?go():im.onload=go}
+const stopCam=()=>{stream&&stream.getTracks().forEach(t=>t.stop());stream=null};
+function cover(x,s,bx,by,bw,bh){const r=Math.max(bw/s.width,bh/s.height),w=bw/r,h=bh/r;x.drawImage(s,(s.width-w)/2,(s.height-h)/2,w,h,bx,by,bw,bh)}
+function compose(f,s){const strip=f==='strip',W=strip?600:900,H=strip?1800:1100,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  x.fillStyle=cfg.color;x.fillRect(0,0,W,H);
+  (strip?[0,1,2].map(i=>[40,40+i*510,520,480]):[[50,50,800,800]]).forEach((b,i)=>cover(x,s[i],...b));
+  x.fillStyle=cfg.text;x.textAlign='center';x.font=`700 ${strip?46:58}px Georgia,serif`;x.fillText(cfg.event,W/2,strip?1670:960,W-80);
+  x.font=`${strip?28:34}px Georgia,serif`;x.fillText(cfg.foot||new Date().toLocaleDateString('pt-BR'),W/2,strip?1730:1030);
+  if(FR[f])x.drawImage(FR[f],0,0,W,H);return c}
+
+/* ---------- início / rotas ---------- */
+async function init(){
+  try{await openDb()}catch(e){return app.innerHTML='<div class="card err">Armazenamento (IndexedDB) indisponível. Saia da aba anônima.</div>'}
+  const m=location.hash.match(/^#g=([0-9a-f]+)\.(\w+)$/i);
+  if(m){await kvSet('sync',{gid:m[1],tok:m[2]});try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
+  S=await kvGet('sync')||{};route()}
+function route(){clearInterval(timer);stopCam();location.hash==='#admin'?admin():guestHome()}
+addEventListener('hashchange',route);
+
+/* ---------- CONVIDADO ---------- */
+async function guestHome(){
+  if(!S.gid)return app.innerHTML='<h1>Cabine de Fotos</h1><div class="card">Escaneie o QR Code do evento para começar.</div>';
+  app.innerHTML='<p class=m>Carregando…</p>';
+  try{await loadCfg()}catch(e){return app.innerHTML='<div class="card err">Não foi possível conectar. Verifique a internet e recarregue.</div>'}
+  const f=[cfg.strip&&['strip','🎞️ Tirinha','3 fotos, 3 poses'],cfg.pola&&['pola','🖼️ Polaroide','1 foto']].filter(Boolean);
+  app.innerHTML=`<h1>${esc(cfg.event)}</h1><p class=m>Tire sua foto e ela sai impressa com a moldura da festa.</p>
+  <div class=card><label>Seu nome<input id=gn autocomplete=off placeholder="Ex.: Maria"></label>
+  <div class=fm>${f.map(x=>`<button class=fb data-f=${x[0]}><b>${x[1]}</b><small>${x[2]}</small></button>`).join('')}</div><p id=er class=err></p></div>`;
+  $('#gn').value=guest?guest.n:'';
+  document.querySelectorAll('.fb').forEach(b=>b.onclick=()=>begin(b.dataset.f))}
+
+async function begin(f){
+  const n=$('#gn')?$('#gn').value.trim():guest.n,k=n.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g,'');
+  if(!k)return $('#er').textContent='Digite seu nome.';
+  let used;try{used=countOf(await gGet(),k)}catch(e){return $('#er').textContent='Sem conexão com o servidor.'}
+  if(used>=cfg.max)return $('#er').textContent=`Você já usou suas ${cfg.max} foto(s) permitidas.`;
+  fmt=f;guest={n,k,used};
+  app.innerHTML=`<div class=cam><video id=v playsinline muted></video><div id=cd></div><div id=fl></div></div><p id=ms class=m>Abrindo câmera…</p><button class=pri id=go disabled>Começar</button><button id=bk>Voltar</button>`;
+  $('#bk').onclick=()=>route();
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:960}},audio:false});
+    const v=$('#v');v.srcObject=stream;await v.play();
+    $('#ms').textContent=f==='strip'?'Vamos fazer 3 poses! Toque em Começar.':'Toque em Começar e sorria!';
+    $('#go').disabled=false;$('#go').onclick=shoot}
+  catch(e){$('#ms').className='err';$('#ms').textContent='Não consegui acessar a câmera. Permita o acesso e recarregue a página.'}}
+
+function snap(){const v=$('#v'),c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;const x=c.getContext('2d');x.translate(c.width,0);x.scale(-1,1);x.drawImage(v,0,0);return c}
+async function shoot(){
+  $('#go').disabled=true;$('#bk').disabled=true;const N=fmt==='strip'?3:1,shots=[];
+  for(let i=0;i<N;i++){
+    $('#ms').textContent=N>1?`Pose ${i+1} de ${N}`:'Sorria!';
+    for(let c=3;c>0;c--){$('#cd').textContent=c;await sleep(1000)}
+    $('#cd').textContent='';shots.push(snap());$('#fl').style.opacity=1;setTimeout(()=>$('#fl').style.opacity=0,150);await sleep(1100)}
+  stopCam();const img=compose(fmt,shots).toDataURL('image/jpeg',.88);cfg.confirm?preview(img):result(img)}
+function preview(img){
+  app.innerHTML=`<h1>Gostou?</h1><img class=res src="${img}"><button class=pri id=ok>Enviar para impressão</button><button id=rf>Refazer</button>`;
+  $('#ok').onclick=()=>result(img);
+  $('#rf').onclick=()=>{app.innerHTML='<input id=gn type=hidden><p id=er class=err></p>';$('#gn').value=guest.n;begin(fmt)}}
+
+function result(img){
+  const k=guest.k,f=fmt,left=Math.max(0,cfg.max-guest.used-1);
+  app.innerHTML=`<h1>Sua foto ficou pronta!</h1><img class=res src="${img}"><p id=sm class=m></p><div id=ab></div>`;
+  const up=async()=>{
+    $('#sm').className='m';$('#sm').textContent='Enviando para impressão…';$('#ab').innerHTML='';
+    try{const ts=Date.now();
+      await gSet({[`p-${ts}-${k}-${f}.txt`]:{content:img},[`c-${k}-${ts}.txt`]:{content:'1'}});
+      guest.used++;$('#sm').textContent=`✅ Enviada! Retire sua foto na impressora. Restam ${left} foto(s) para você.`;
+      $('#ab').innerHTML=(left?'<button class=pri id=nw>Nova foto</button>':'')+'<button id=pr>Imprimir neste aparelho</button>';
+      $('#pr').onclick=()=>printImg(img,f);if(left)$('#nw').onclick=()=>guestHome()}
+    catch(e){$('#sm').className='err';$('#sm').textContent='Falha no envio. Verifique a internet.';$('#ab').innerHTML='<button class=pri id=rt>Tentar de novo</button>';$('#rt').onclick=up}};
+  up()}
+
+/* ---------- ORGANIZADOR / ESTAÇÃO DE IMPRESSÃO (#admin) ---------- */
+async function admin(){
+  if(S.gid)try{await loadCfg()}catch(e){}
+  const auto=(await kvGet('auto'))!==false;
+  app.innerHTML=`<h1>Painel do organizador</h1>
+  <div class=card><h2>1. Sincronização (GitHub Gist)</h2>
+  <label>Token do GitHub (permissão: gist)<input id=tk type=password value="${esc(S.tok||'')}"></label>
+  <label>ID do Gist<input id=gi value="${esc(S.gid||'')}" placeholder="vazio = criar um Gist novo"></label>
+  <button class=pri id=ss>Salvar / criar Gist</button><p id=sy class=m></p></div>
+  <div class=card><h2>2. Evento e moldura</h2>
+  <label>Nome do evento<input id=ev value="${esc(cfg.event)}"></label>
+  <div class=row><label>Cor da moldura<input type=color id=co value="${cfg.color}"></label><label>Cor do texto<input type=color id=tx value="${cfg.text}"></label></div>
+  <label>Fotos permitidas por convidado<input type=number id=mx min=1 value="${cfg.max}"></label>
+  <label>Texto do rodapé (vazio = data de hoje)<input id=ft value="${esc(cfg.foot)}" placeholder="Ex.: Aniversário da Ana · 15/11"></label>
+  <label><input type=checkbox id=cf ${cfg.confirm?'checked':''}> Convidado confirma a foto antes de enviar (pode refazer sem gastar cota)</label>
+  <label><input type=checkbox id=dp ${cfg.dup?'checked':''}> Papel 10×15: imprimir 2 tirinhas lado a lado</label>
+  <label><input type=checkbox id=fs ${cfg.strip?'checked':''}> Formato tirinha (3 fotos)</label>
+  <label><input type=checkbox id=fp ${cfg.pola?'checked':''}> Formato polaroide (1 foto)</label>
+  <label>Moldura PNG da tirinha (600×1800, transparente)<input type=file id=f1 accept=image/*></label>
+  <label><input type=checkbox id=r1> Remover moldura atual da tirinha</label>
+  <label>Moldura PNG da polaroide (900×1100, transparente)<input type=file id=f2 accept=image/*></label>
+  <label><input type=checkbox id=r2> Remover moldura atual da polaroide</label>
+  <button class=pri id=sv>Salvar configuração</button><button id=pv>Prévia</button><p id=sm class=m></p><div id=pv2></div></div>
+  <div class=card><h2>3. QR Code dos convidados</h2>
+  <label>Endereço desta página (HTTPS)<input id=lk value="${esc(location.href.split('#')[0])}"></label>
+  <div id=qr></div><button id=qp>Imprimir QR</button></div>
+  <div class=card><h2>4. Fila de impressão</h2>
+  <label><input type=checkbox id=au ${auto?'checked':''}> Imprimir automaticamente (mantenha esta aba aberta)</label><div id=ql></div><button id=lq>Limpar fila deste computador</button></div>
+  <div class=card><h2>5. Convidados</h2><div id=gl></div><button id=za>Zerar todos os convidados (novo evento)</button></div>`;
+  const form=()=>({event:$('#ev').value.trim()||'Minha Festa',color:$('#co').value,text:$('#tx').value,max:Math.max(1,+$('#mx').value||1),strip:$('#fs').checked,pola:$('#fp').checked,foot:$('#ft').value.trim(),confirm:$('#cf').checked,dup:$('#dp').checked});
+  const frame=async(inp,k,W,H)=>{const f=inp.files[0];if(!f)return;const b=await createImageBitmap(f),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(b,0,0,W,H);newFr[k]=c.toDataURL('image/png');FR[k]=await loadImg(newFr[k])};
+  $('#f1').onchange=()=>frame($('#f1'),'strip',600,1800);$('#f2').onchange=()=>frame($('#f2'),'pola',900,1100);
+  $('#ss').onclick=async()=>{
+    try{S={tok:$('#tk').value.trim(),gid:$('#gi').value.trim()};
+      if(!S.gid)S.gid=(await gh('POST','',{description:'Cabine de Fotos',public:false,files:{'config.json':{content:JSON.stringify(DEF)}}})).id;
+      else await gGet();
+      await kvSet('sync',S);admin()}catch(e){$('#sy').className='err';$('#sy').textContent='Não conectou: confira token e ID ('+e.message+').'}};
+  $('#sv').onclick=async()=>{
+    if(!S.gid)return $('#sm').textContent='Configure o Gist primeiro.';
+    try{cfg=form();const files={'config.json':{content:JSON.stringify(cfg)}};
+      if($('#r1').checked&&FR.strip&&!newFr.strip){files['frame-strip.txt']=null;FR.strip=null}
+      if($('#r2').checked&&FR.pola&&!newFr.pola){files['frame-pola.txt']=null;FR.pola=null}
+      for(const k in newFr)files['frame-'+k+'.txt']={content:newFr[k]};
+      await gSet(files);newFr={};$('#sm').className='m';$('#sm').textContent='✅ Configuração salva e enviada aos convidados.'}
+    catch(e){$('#sm').className='err';$('#sm').textContent='Falha ao salvar: '+e.message}};
+  $('#pv').onclick=()=>{cfg={...cfg,...form()};const d=()=>{const c=document.createElement('canvas');c.width=800;c.height=600;const x=c.getContext('2d'),g=x.createLinearGradient(0,0,800,600);g.addColorStop(0,'#f9a8d4');g.addColorStop(1,'#60a5fa');x.fillStyle=g;x.fillRect(0,0,800,600);return c};
+    $('#pv2').innerHTML='<div id=pv>'+['strip','pola'].map(f=>`<img src="${compose(f,[d(),d(),d()]).toDataURL('image/jpeg',.7)}">`).join('')+'</div>'};
+  const mkqr=()=>{$('#qr').innerHTML='';if(S.gid&&window.QRCode)new QRCode($('#qr'),{text:$('#lk').value.trim()+'#g='+S.gid+'.'+S.tok,width:240,height:240,correctLevel:QRCode.CorrectLevel.L})};
+  $('#lk').oninput=mkqr;mkqr();
+  $('#qp').onclick=()=>{const q=$('#qr canvas');if(!q)return;const c=document.createElement('canvas');c.width=600;c.height=800;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,600,800);x.fillStyle='#000';x.textAlign='center';x.font='700 44px Georgia,serif';x.fillText(form().event,300,90,540);x.font='30px Georgia,serif';x.fillText('Escaneie e tire sua foto!',300,150,540);x.drawImage(q,60,200,480,480);printImg(c.toDataURL(),'qr')};
+  $('#au').onchange=()=>kvSet('auto',$('#au').checked);
+  $('#lq').onclick=async()=>{if(confirm('Apagar todas as fotos guardadas neste computador?')){for(const p of await pAll())await pDel(p.name);renderQ()}};
+  $('#za').onclick=async()=>{if(!S.gid||!confirm('Liberar a cota de todos os convidados?'))return;const g=await gGet(),d={};Object.keys(g.files).filter(n=>n.startsWith('c-')).forEach(n=>d[n]=null);if(Object.keys(d).length)await gSet(d);tick()};
+  try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
+  $('#ql').onclick=async e=>{const n=e.target.dataset.n,a=e.target.dataset.a;if(!n)return;
+    if(a==='rm')await pDel(n);else{const p=await pGet(n);printImg(p.img,p.fmt);p.status='printed';await pPut(p)}renderQ()};
+  renderQ();timer=setInterval(tick,5000);tick()}
+
+async function renderQ(){
+  const ps=(await pAll()).sort((a,b)=>b.ts-a.ts);
+  $('#ql').innerHTML=ps.length?ps.map(p=>`<div class=q><img src="${p.img}"><div><b>${esc(p.guest)}</b> · ${p.fmt==='strip'?'Tirinha':'Polaroide'}<br><span class=m>${p.status==='pending'?'⏳ aguardando':'🖨️ impressa'}</span></div><a download="foto-${esc(p.guest)}-${p.ts}.jpg" href="${p.img}">Baixar</a> <button data-a=pr data-n="${esc(p.name)}">Imprimir</button><button data-a=rm data-n="${esc(p.name)}">✕</button></div>`).join(''):'<p class=m>Nenhuma foto ainda.</p>'}
+
+function renderG(g){
+  const c={};Object.keys(g.files).forEach(n=>{const m=n.match(/^c-([a-z0-9]+)-\d+\.txt$/);if(m)c[m[1]]=(c[m[1]]||0)+1});
+  const ks=Object.keys(c);
+  $('#gl').innerHTML=ks.length?ks.map(k=>`<div class=q><div><b>${esc(k)}</b> · ${c[k]}/${cfg.max} foto(s)</div><button data-k="${esc(k)}">Zerar</button></div>`).join(''):'<p class=m>Nenhum convidado ainda.</p>';
+  $('#gl').onclick=async e=>{const k=e.target.dataset.k;if(!k)return;const d={};Object.keys(g.files).filter(n=>n.startsWith('c-'+k+'-')).forEach(n=>d[n]=null);await gSet(d);tick()}}
+
+async function tick(){
+  if(busy||!S.gid||!$('#ql'))return;busy=1;
+  try{const g=await gGet(),names=Object.keys(g.files).filter(n=>n.startsWith('p-')).sort(),del={};
+    for(const n of names){
+      if(!await pGet(n)){const[,ts,k,f]=n.replace('.txt','').split('-');await pPut({name:n,ts:+ts,guest:k,fmt:f,img:await txt(g.files[n]),status:'pending'})}
+      del[n]=null}
+    if(names.length)await gSet(del);
+    if($('#au').checked)for(const p of(await pAll()).filter(p=>p.status==='pending').sort((a,b)=>a.ts-b.ts)){printImg(p.img,p.fmt);p.status='printed';await pPut(p);await sleep(3000)}
+    $('#sy').className='m';$('#sy').textContent='Conectado ✅ · última checagem '+new Date().toLocaleTimeString('pt-BR');
+    renderQ();renderG(g)}
+  catch(e){if($('#sy')){$('#sy').className='err';$('#sy').textContent='Sem conexão com o Gist…'}}
+  busy=0}
+
+init();
+</script></body></html>
