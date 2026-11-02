@@ -769,9 +769,10 @@ async function conn(){
   <button class=pri data-a=bkx>${ico('download')}Baixar backup</button>
   <label>Restaurar backup<input type=file id=bkf accept=".json,application/json"></label><p id=bkm class=m></p>
   <p class=warn style="font-size:12px;margin:6px 0 0;color:var(--wa)">O arquivo contém o token do GitHub. Guarde-o em local seguro e não o compartilhe.</p></div>
-  <div class=card><h2>QR Code dos convidados</h2><label>Endereço desta página (HTTPS)<input id=lk value="${esc(location.href.split('#')[0])}"></label><div id=qr></div><button class=pri data-a=qd>${ico('download')}Baixar cartão do QR</button><button data-a=qp>${ico('print')}Imprimir QR</button></div></div>`}
+  <div class=card><h2>QR Code dos convidados</h2><label>Endereço desta página (HTTPS)<input id=lk value="${esc(location.href.split('#')[0])}"></label><div id=qr></div><button class=pri data-a=qd>${ico('download')}Baixar cartão do QR</button><button data-a=qp>${ico('print')}Imprimir QR</button></div>
+  <div class=card><h2>QR Codes · 6 por folha</h2><p class=m style="font-size:13px;margin:-6px 0 0">Cartões menores com o QR Code, 6 por folha e marcas de corte. Bom para espalhar pelas mesas.</p><label>Papel<select id=qpp>${Object.entries(QPAP).map(([k,v])=>`<option value=${k} ${k===QPP?'selected':''}>${v[0]}</option>`).join('')}</select></label><img id=q6pv alt="Prévia da folha" style="width:100%;max-width:300px;align-self:center;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.18)"><button class=pri data-a=q6d>${ico('download')}Baixar PDF (6 por folha)</button><button data-a=q6p>${ico('print')}Imprimir 6 por folha</button></div></div>`}
 
-const mkqr=()=>{const q=$('#qr');if(!q)return;q.innerHTML='';if(S.gid&&window.QRCode)new QRCode(q,{text:$('#lk').value.trim()+'#g='+S.gid+'.'+S.tok,width:240,height:240,correctLevel:QRCode.CorrectLevel.L})};
+const mkqr=()=>{const q=$('#qr');if(!q)return;q.innerHTML='';if(S.gid&&window.QRCode)new QRCode(q,{text:$('#lk').value.trim()+'#g='+S.gid+'.'+S.tok,width:240,height:240,correctLevel:QRCode.CorrectLevel.L});q6prev()};
 let DM,PVC=null;const defDM=()=>{if(!DM){DM=document.createElement('canvas');DM.width=800;DM.height=600;const x=DM.getContext('2d'),g=x.createLinearGradient(0,0,800,600);g.addColorStop(0,'#fbcfe8');g.addColorStop(1,'#93c5fd');x.fillStyle=g;x.fillRect(0,0,800,600);x.fillStyle='rgba(255,255,255,.65)';x.beginPath();x.arc(400,250,95,0,7);x.fill();x.beginPath();x.ellipse(400,600,180,210,0,Math.PI,0);x.fill()}return DM};
 const getDM=()=>defDM();
 function prevNow(){const a=$('#pa');if(!a)return;const d=getDM();a.src=compose('strip',[d,d,d]).toDataURL('image/jpeg',.7);$('#pb').src=compose('pola',[d]).toDataURL('image/jpeg',.7);filt();thumbs()}
@@ -790,6 +791,7 @@ async function inp(e){const t=e.target;
   if(t.id==='bgf'){const f=t.files[0];if(f){BG.img=shrink(await createImageBitmap(f),1600).toDataURL('image/jpeg',.8);await kvSet('bg',BG);applyBG(BG);if(cfg.bgG)dirty();await page()}return}
   if(t.dataset.b){const b=t.dataset.b;BG[b]=+t.value;const o=t.parentNode.querySelector('output');if(o)o.textContent=t.value+(t.dataset.u||'');applyBG(BG);updBGp();kvSet('bg',BG);if(cfg.bgG&&BG.img)dirty();return}
   if(t.type==='file'){const f=t.files[0];if(!f)return;const k=t.dataset.k,W=k==='strip'?600:900,H=k==='strip'?1800:1100,b=await createImageBitmap(f),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(b,0,0,W,H);newFr[k]=c.toDataURL('image/png');FR[k]=await loadImg(newFr[k]);dirty();return page()}
+  if(t.id==='qpp'){QPP=t.value;return q6prev()}
   const f=t.dataset.f;if(!f)return;
   cfg[f]=t.type==='checkbox'?t.checked:t.type==='number'?Math.max(1,+t.value||1):t.type==='range'?+t.value:t.value;if(t.type==='range'){const o=t.parentNode.querySelector('output');o&&(o.textContent=t.value)}dirty();if(f==='font'||t.type==='color'||f==='event'||f==='foot'||f==='dt')cfg.tpl=cfg.tpl;prev()}
 /* ---------- cartão do QR Code (impressão/download) ---------- */
@@ -849,6 +851,68 @@ function qrCard(){
   if(FR.pola&&0)x.drawImage(FR.pola,0,0,W,H);
   return cv}
 
+/* ---------- QR Codes: 6 por folha (impressão / PDF) ---------- */
+let QPP='a4',QRC={};
+const QPAP={a4:['A4 · 21×29,7 cm',21,29.7],let:['Carta · 21,6×27,9 cm',21.59,27.94]};
+function qrCv(link){if(QRC.l!==link){const tmp=document.createElement('div');tmp.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(tmp);
+  new QRCode(tmp,{text:link,width:600,height:600,correctLevel:QRCode.CorrectLevel.L});const q=tmp.querySelector('canvas'),c=document.createElement('canvas');c.width=c.height=600;c.getContext('2d').drawImage(q,0,0);tmp.remove();QRC={l:link,c}}return QRC.c}
+/* cartão compacto (1 de 6), desenhado no tamanho exato da célula */
+function qrMini(cw,ch,qc){
+  const c=cfg,cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const x=cv.getContext('2d'),s=cw/1240,SANS='Inter,"Segoe UI",Roboto,Arial,sans-serif',
+  rr=(a,b,w,h,r)=>{x.beginPath();x.roundRect(a,b,w,h,r)},
+  lum=h=>{h=String(h||'#000').replace('#','');if(h.length===3)h=h.replace(/./g,'$&$&');const n=parseInt(h,16);return[n>>16&255,n>>8&255,n&255].map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)}).reduce((a,v,i)=>a+v*[.2126,.7152,.0722][i],0)},
+  onC=h=>lum(h)>.5?'#111827':'#ffffff';
+  const g=x.createLinearGradient(0,0,cw,ch);g.addColorStop(0,c.color);g.addColorStop(1,c.c2||c.color);x.fillStyle=g;x.fillRect(0,0,cw,ch);
+  if(FR.bg&&c.bo>0)drawBg(x,cw,ch,c);
+  deco(x,cw,ch,c);
+  /* título */
+  const T=c.up?String(c.event).toUpperCase():c.event;x.save();x.fillStyle=c.text;x.textAlign='center';x.textBaseline='alphabetic';if(c.d==='neon'){x.shadowColor=c.acc;x.shadowBlur=20*s}
+  let fs=110*s;do{x.font='700 '+fs+'px '+c.font;fs-=3*s}while(x.measureText(T).width>cw*.84&&fs>28*s);x.fillText(T,cw/2,ch*.17,cw*.84);x.restore();
+  /* divisor */
+  x.save();x.strokeStyle=c.acc;x.fillStyle=c.acc;x.lineWidth=4*s;x.lineCap='round';const dy=ch*.225;x.beginPath();x.moveTo(cw/2-170*s,dy);x.lineTo(cw/2-26*s,dy);x.moveTo(cw/2+26*s,dy);x.lineTo(cw/2+170*s,dy);x.stroke();x.translate(cw/2,dy);x.rotate(Math.PI/4);x.fillRect(-8*s,-8*s,16*s,16*s);x.restore();
+  /* painel do QR */
+  const P=Math.min(ch*.52,cw*.62),qx=(cw-P)/2,qy=ch*.27,pad=P*.1;
+  x.save();x.shadowColor='rgba(0,0,0,.38)';x.shadowBlur=40*s;x.shadowOffsetY=16*s;rr(qx,qy,P,P,P*.08);x.fillStyle='#fff';x.fill();x.restore();
+  x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(qc,qx+pad,qy+pad,P-2*pad,P-2*pad);
+  /* pílula */
+  x.save();x.font='800 '+(30*s)+'px '+SANS;if('letterSpacing' in x)x.letterSpacing=(3*s)+'px';const t2='APONTE A CÂMERA',w2=x.measureText(t2).width+90*s,h2=70*s,x2=(cw-w2)/2,y2=qy+P-h2/2;
+  x.shadowColor='rgba(0,0,0,.35)';x.shadowBlur=18*s;x.shadowOffsetY=8*s;rr(x2,y2,w2,h2,h2/2);x.fillStyle=c.acc;x.fill();x.shadowColor='transparent';x.lineWidth=5*s;x.strokeStyle='#fff';x.stroke();
+  x.fillStyle=onC(c.acc);x.textAlign='center';x.textBaseline='middle';x.fillText(t2,cw/2+2*s,y2+h2/2+2*s);x.restore();
+  /* legenda e rodapé */
+  x.save();x.fillStyle=c.text;x.textAlign='center';x.textBaseline='alphabetic';x.font='600 '+(46*s)+'px '+SANS;x.fillText('Escaneie e tire sua foto!',cw/2,qy+P+h2/2+56*s,cw*.9);
+  x.globalAlpha=.92;x.font='500 '+(26*s)+'px '+SANS;const ft=c.foot||('Até '+c.max+' foto'+(c.max>1?'s':'')+' por convidado'),by=ch-30*s;
+  x.fillText(ft,cw/2,c.dt?by-36*s:by,cw*.9);if(c.dt){x.globalAlpha=.7;x.font='400 '+(23*s)+'px '+SANS;x.fillText(c.dt,cw/2,by,cw*.9)}x.restore();
+  return cv}
+/* folha com 6 cartões (2×3) e marcas de corte */
+function qrSheet(dpi){
+  const[,wc,hc]=QPAP[QPP],px=v=>Math.round(v*dpi/2.54),pw=px(wc),ph=px(hc),m=px(1),cw=Math.floor((pw-2*m)/2),ch=Math.floor((ph-2*m)/3),
+  sc=document.createElement('canvas');sc.width=pw;sc.height=ph;const x=sc.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,pw,ph);
+  const card=qrMini(cw,ch,qrCv($('#lk').value.trim()+'#g='+S.gid+'.'+S.tok)),gx=Math.round((pw-2*cw)/2),gy=Math.round((ph-3*ch)/2);
+  for(let r=0;r<3;r++)for(let k=0;k<2;k++)x.drawImage(card,gx+k*cw,gy+r*ch);
+  x.strokeStyle='#777';x.lineWidth=Math.max(1,dpi/150);const t=px(.4),o=px(.1);
+  for(let k=0;k<=2;k++){const X=gx+k*cw;x.beginPath();x.moveTo(X,gy-o);x.lineTo(X,gy-o-t);x.moveTo(X,gy+3*ch+o);x.lineTo(X,gy+3*ch+o+t);x.stroke()}
+  for(let r=0;r<=3;r++){const Y=gy+r*ch;x.beginPath();x.moveTo(gx-o,Y);x.lineTo(gx-o-t,Y);x.moveTo(gx+2*cw+o,Y);x.lineTo(gx+2*cw+o+t,Y);x.stroke()}
+  return sc}
+function q6prev(){const e=$('#q6pv');if(!e||!S.gid||!window.QRCode)return;try{e.src=qrSheet(90).toDataURL('image/jpeg',.75)}catch(er){}}
+/* PDF mínimo (1 página, imagem JPEG) — sem biblioteca externa */
+function pdfJpeg(url,wpt,hpt,iw,ih){
+  const b=atob(url.split(',')[1]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
+  const E=new TextEncoder(),parts=[],off=[];let len=0;const put=v=>{const a=typeof v==='string'?E.encode(v):v;parts.push(a);len+=a.length},
+  obj=(i,body)=>{off[i]=len;put(i+' 0 obj\n'+body+'\nendobj\n')},W=wpt.toFixed(2),H=hpt.toFixed(2);
+  put('%PDF-1.4\n');obj(1,'<</Type/Catalog/Pages 2 0 R>>');obj(2,'<</Type/Pages/Kids[3 0 R]/Count 1>>');
+  obj(3,'<</Type/Page/Parent 2 0 R/MediaBox[0 0 '+W+' '+H+']/Resources<</XObject<</Im0 4 0 R>>>>/Contents 5 0 R>>');
+  off[4]=len;put('4 0 obj\n<</Type/XObject/Subtype/Image/Width '+iw+'/Height '+ih+'/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length '+u.length+'>>\nstream\n');put(u);put('\nendstream\nendobj\n');
+  const cs='q '+W+' 0 0 '+H+' 0 0 cm /Im0 Do Q';obj(5,'<</Length '+cs.length+'>>\nstream\n'+cs+'\nendstream');
+  const xr=len;let t='xref\n0 6\n0000000000 65535 f \n';for(let i=1;i<=5;i++)t+=String(off[i]).padStart(10,'0')+' 00000 n \n';
+  put(t+'trailer\n<</Size 6/Root 1 0 R>>\nstartxref\n'+xr+'\n%%EOF');return new Blob(parts,{type:'application/pdf'})}
+function qrPdf(){const sc=qrSheet(300),[,wc,hc]=QPAP[QPP],bl=pdfJpeg(sc.toDataURL('image/jpeg',.95),wc*72/2.54,hc*72/2.54,sc.width,sc.height),
+  a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download='qrcodes-6-por-folha-'+String(cfg.event).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.pdf';
+  document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(a.href)},1500)}
+function qrPrint(){const sc=qrSheet(300),[,wc,hc]=QPAP[QPP],f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);
+  const d=f.contentDocument;d.open();d.write('<!doctype html><meta charset=utf-8><style>@page{margin:0;size:'+wc+'cm '+hc+'cm}html,body{margin:0}div{width:'+wc+'cm;height:'+(hc-.2)+'cm;overflow:hidden}img{display:block;width:'+wc+'cm;height:'+hc+'cm}</style><div><img src="'+sc.toDataURL('image/jpeg',.95)+'"></div>');d.close();
+  const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
+  Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
+
 async function act(e){
   const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,k=t.dataset.k;
   try{
@@ -883,6 +947,8 @@ async function act(e){
   if(a==='zr'||a==='za'){if(!S.gid||(a==='za'&&!confirm('Liberar a cota de todos os convidados?')))return;const g=await gGet(),d={};Object.keys(g.files).filter(n=>a==='za'?n.startsWith('c-'):n.startsWith('c-'+k+'-')).forEach(n=>d[n]=null);if(Object.keys(d).length)await gSet(d);return tick()}
   if(a==='qp'){if(!S.gid)return;return printImg(qrCard().toDataURL('image/png'),'qr')}
   if(a==='qd'){if(!S.gid)return;const cv=qrCard(),a2=document.createElement('a');a2.href=cv.toDataURL('image/png');a2.download='qrcode-'+String(cfg.event).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';document.body.appendChild(a2);a2.click();return setTimeout(()=>a2.remove(),500)}
+  if(a==='q6p'){if(!S.gid)return;return qrPrint()}
+  if(a==='q6d'){if(!S.gid)return;return qrPdf()}
   if(a==='ss'){S={tok:$('#tk').value.trim(),gid:$('#gi').value.trim()};
     if(!S.gid)S.gid=(await gh('POST','',{description:'Cabine de Fotos',public:false,files:{'config.json':{content:JSON.stringify(cfg)}}})).id;else await gGet();
     await kvSet('sync',S);return admin()}
