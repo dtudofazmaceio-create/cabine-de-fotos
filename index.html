@@ -175,9 +175,9 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--m)}
 .pvc{position:sticky;top:96px}
 .ph{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}.ph h2{margin:0}
 .stage{background:var(--c2);border-radius:14px;padding:18px}
-.pvs{display:flex;gap:14px;align-items:flex-start;justify-content:center}
-.pvs img{width:34%;border:0;border-radius:6px;box-shadow:0 10px 28px rgba(0,0,0,.3);background:#ddd}.pvs img+img{width:62%}
-.pvs[data-pf=strip] #pb,.pvs[data-pf=pola] #pa{display:none}.pvs[data-pf=strip] #pa{width:46%}.pvs[data-pf=pola] #pb{width:92%}
+.pvs{display:flex;gap:10px;align-items:flex-start;justify-content:center}
+.pvs img{min-width:0;width:auto;border:0;border-radius:6px;box-shadow:0 10px 28px rgba(0,0,0,.3);background:#ddd}
+.pvs:not([data-pf=all]) img{display:none}.pvs:not([data-pf=all]) img.on{display:block;flex:none!important;max-width:92%;max-height:70vh}.pvs[data-pf=strip] img.on{max-width:46%}
 .sheet{height:200px;margin:14px 0 6px;background:#fff;border:1px solid var(--b);box-shadow:0 6px 18px rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center;max-width:100%}
 .sit{display:flex;width:100%;justify-content:center;align-items:center}
 .sit i{flex:none;display:block;background:linear-gradient(135deg,#c4b5fd,#f9a8d4);outline:1px solid #8b5cf6}
@@ -243,7 +243,14 @@ html.hasbg .sb{background:color-mix(in srgb,var(--sb) 84%,transparent);-webkit-b
 <script>
 const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms)),app=$('#app');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false,geo:true,bo:60,bz:100,bx:50,by:50};
+const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false,geo:true,bo:60,bz:100,bx:50,by:50,f1015:true,f1520:true,si:6};
+/* formatos de foto. Chave sem hífen (vai no nome do arquivo). W×H = canvas; B = caixas das fotos; T = [tamanho,y] de título/rodapé/data; p = prefixo das configs de impressão; ch = larguras sugeridas (cm) */
+const FMT={
+ strip:{n:'Tirinha',s:'3 fotos, 3 poses',r:'Formato tirinha (3 fotos, 3 poses)',pt:'Tirinha (proporção 1:3)',ic:'film',W:600,H:1800,B:[0,1,2].map(i=>[40,40+i*510,520,480]),T:[[46,1640],[30,1692],[26,1744]],p:'st',ch:[3,4,5,6,7,8]},
+ pola:{n:'Polaroide',s:'1 foto',r:'Formato polaroide (1 foto)',pt:'Polaroide',ic:'polaroid',W:900,H:1100,B:[[50,50,800,800]],T:[[58,935],[36,990],[30,1045]],p:'po',ch:[6,8,9,10,12,15]},
+ f1015:{n:'Foto 10×15',s:'1 foto · 10×15 cm',r:'Formato 10×15 cm (1 foto)',pt:'Foto 10×15 (proporção 2:3)',ic:'image',W:1200,H:1800,B:[[70,70,1060,1360]],T:[[78,1570],[46,1645],[38,1710]],p:'a1',ch:[7,8,9,10]},
+ f1520:{n:'Foto 15×20',s:'1 foto · 15×20 cm',r:'Formato 15×20 cm (1 foto)',pt:'Foto 15×20 (proporção 3:4)',ic:'image',W:1500,H:2000,B:[[80,80,1340,1480]],T:[[90,1740],[54,1825],[44,1900]],p:'a2',ch:[9,12,13.5,15]}};
+const FK=Object.keys(FMT),fN=k=>(FMT[k]||{}).n||k,fill=(k,d)=>Array(FMT[k].B.length).fill(d);
 let db,S={},cfg={...DEF},FR={},stream,fmt,guest,timer,busy=0,newFr={},geo=null,shotAt=0;
 const getGeo=()=>new Promise(ok=>{if(!cfg.geo||!navigator.geolocation)return ok(null);let d=0;const f=v=>{if(!d){d=1;ok(v)}};setTimeout(()=>f(null),12000);try{navigator.geolocation.getCurrentPosition(p=>f({lat:+p.coords.latitude.toFixed(6),lng:+p.coords.longitude.toFixed(6),acc:Math.round(p.coords.accuracy||0)}),()=>f(null),{enableHighAccuracy:true,timeout:10000,maximumAge:60000})}catch(e){f(null)}});
 
@@ -262,7 +269,7 @@ const loadImg=u=>new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerr
 const countOf=(g,k)=>Object.keys(g.files).filter(n=>n.startsWith('c-'+k+'-')).length;
 async function loadCfg(){const g=await gGet(),f=g.files;
   cfg={...DEF,...JSON.parse(f['config.json']?await txt(f['config.json']):'{}')};
-  for(const k of['strip','pola','bg']){FR[k]=null;const ff=f['frame-'+k+'.txt'];if(ff){const u=await txt(ff);if(u.startsWith('data:'))FR[k]=await loadImg(u)}}
+  for(const k of[...FK,'bg']){FR[k]=null;const ff=f['frame-'+k+'.txt'];if(ff){const u=await txt(ff);if(u.startsWith('data:'))FR[k]=await loadImg(u)}}
   BGG=null;if(cfg.bgG&&f['bg.txt'])try{BGG=JSON.parse(await txt(f['bg.txt']))}catch(e){}
   return g}
 
@@ -275,10 +282,10 @@ function printGrid(L,srcs){const cap=Math.max(1,L.cols*L.rows),f=document.create
   const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
 function printImg(src,kind){
-  if(kind==='strip'||kind==='pola'){const L=lay(kind);if(L.pg)return printGrid(L,Array(L.n).fill(src))}
+  if(FMT[kind]){const L=lay(kind);if(L.pg)return printGrid(L,Array(L.n).fill(src))}
   const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);const d=f.contentDocument;d.open();
   let css='@page{margin:0}body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center}img{max-width:100%;max-height:100vh}',n=1;
-  if(kind==='strip'||kind==='pola'){const L=lay(kind);n=L.n;css='@page{margin:0}html,body{margin:0}body{height:100vh;display:flex;align-items:center;justify-content:center}img{flex:none;display:block;width:'+L.w+'cm;height:'+L.h+'cm}'}
+  if(FMT[kind]){const L=lay(kind);n=L.n;css='@page{margin:0}html,body{margin:0}body{height:100vh;display:flex;align-items:center;justify-content:center}img{flex:none;display:block;width:'+L.w+'cm;height:'+L.h+'cm}'}
   d.write('<style>'+css+'</style>'+('<img src="'+src+'">').repeat(n));d.close();
   const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
@@ -433,14 +440,14 @@ function deco(x,W,H,t){
   if(t.d==='clouds'){x.fillStyle='#fff';x.globalAlpha=.7;[[90,60,1],[W-110,H-70,1.2],[W-70,24,.7],[60,H-40,.8],[W/2,H-24,.9]].forEach(([px,py,k])=>{[[0,0,34],[-34,10,24],[34,10,26],[10,-14,26]].forEach(([dx,dy,rr])=>{x.beginPath();x.arc(px+dx*k,py+dy*k,rr*k,0,7);x.fill()})});x.globalAlpha=1}
   if(t.d==='daisy'){for(let i=0;i<16;i++){const px=r()*W,py=r()*H,s=14+r()*16;for(let k=0;k<8;k++){const a=k*Math.PI/4;x.globalAlpha=.9;x.fillStyle=i%3?'#fff':'#fef3c7';x.beginPath();x.ellipse(px+Math.cos(a)*s,py+Math.sin(a)*s,s*.7,s*.32,a,0,7);x.fill()}x.globalAlpha=1;x.fillStyle=t.acc;x.beginPath();x.arc(px,py,s*.4,0,7);x.fill()}}
   x.restore();if(t.d.slice(0,3)==='fr-')frame(x,W,H,t)}
-function compose(f,s,c=cfg){const strip=f==='strip',W=strip?600:900,H=strip?1800:1100,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+function compose(f,s,c=cfg){const F=FMT[f]||FMT.pola,W=F.W,H=F.H,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
   const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,c.color);g.addColorStop(1,c.c2||c.color);x.fillStyle=g;x.fillRect(0,0,W,H);
   if(FR.bg&&c.bo>0)drawBg(x,W,H,c);deco(x,W,H,c);
   const bc=c.pb==='acc'?c.acc:'#fff',rd=c.rd||0,pd=c.pb==='none'?0:10;
-  (strip?[0,1,2].map(i=>[40,40+i*510,520,480]):[[50,50,800,800]]).forEach((b,i)=>{
+  F.B.forEach((b,i)=>{
     if(pd){x.save();x.shadowColor='rgba(0,0,0,.35)';x.shadowBlur=18;x.fillStyle=bc;x.beginPath();x.roundRect(b[0]-pd,b[1]-pd,b[2]+2*pd,b[3]+2*pd,rd?rd+pd:0);x.fill();x.restore()}
     x.save();x.beginPath();x.roundRect(...b,rd);x.clip();cover(x,s[i],...b);x.restore()});
-  const dt=c.dt||new Date().toLocaleDateString('pt-BR'),k=(c.sz||100)/100,U=v=>c.up?String(v).toUpperCase():v,L=strip?[[46*k,1640,c.event],[30,1692,c.foot],[26,1744,dt]]:[[58*k,935,c.event],[36,990,c.foot],[30,1045,dt]];
+  const dt=c.dt||new Date().toLocaleDateString('pt-BR'),k=(c.sz||100)/100,U=v=>c.up?String(v).toUpperCase():v,L=F.T.map(([sz,y],i)=>[i?sz:sz*k,y,[c.event,c.foot,dt][i]]);
   x.save();x.fillStyle=c.text;x.textAlign='center';if(c.d==='neon'){x.shadowColor=c.acc;x.shadowBlur=22}
   L.forEach(([sz,y,t],i)=>{if(t){x.font=(i?'':'700 ')+sz+'px '+c.font;x.fillText(U(t),W/2,y,W-80)}});x.restore();
   if(FR[f]&&!c.nofr)x.drawImage(FR[f],0,0,W,H);return cv}
@@ -461,7 +468,7 @@ async function guestHome(){
   app.innerHTML='<p class="m ld"><i class=spin></i>Carregando…</p>';
   try{await loadCfg()}catch(e){return app.innerHTML='<div class="card err">Não foi possível conectar. Verifique a internet e recarregue.</div>'}
   applyBG(BGG);
-  const f=[cfg.strip&&['strip','Tirinha','3 fotos, 3 poses','film'],cfg.pola&&['pola','Polaroide','1 foto','polaroid']].filter(Boolean);
+  const f=FK.filter(k=>cfg[k]).map(k=>[k,FMT[k].n,FMT[k].s,FMT[k].ic]);
   app.innerHTML=`<header class=hero><span class=hi>${ico('camera')}</span><h1>${esc(cfg.event)}</h1><p class=m>Tire sua foto e ela sai impressa com a moldura da festa.</p></header>
   <div class=card><label>Seu nome<span class=inw>${ico('user')}<input id=gn autocomplete=off placeholder="Ex.: Maria"></span></label>
   <p class=lbl>Escolha o formato</p><div class=fm>${f.map(x=>`<button class=fb data-f=${x[0]}><span class=fi>${ico(x[3])}</span><b>${x[1]}</b><small>${x[2]}</small></button>`).join('')}</div><p id=er class=err></p>${cfg.geo?`<p class=m style="font-size:12px;margin:10px 0 0">${ico('pin')} O local e o horário da foto são registrados para o organizador do evento.</p>`:''}</div>`;
@@ -478,16 +485,17 @@ async function begin(f){
   $('#bk').onclick=()=>route();
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:960}},audio:false});
     const v=$('#v');v.srcObject=stream;await v.play();
-    $('#ms').textContent=f==='strip'?'Vamos fazer 3 poses! Toque em Começar.':'Toque em Começar e sorria!';
+    $('#ms').textContent=FMT[f].B.length>1?`Vamos fazer ${FMT[f].B.length} poses! Entre uma e outra você terá ${Math.max(3,+cfg.si||6)} segundos para mudar de pose. Toque em Começar.`:'Toque em Começar e sorria!';
     $('#go').disabled=false;$('#go').onclick=shoot}
   catch(e){$('#ms').className='err';$('#ms').textContent='Não consegui acessar a câmera. Permita o acesso e recarregue a página.'}}
 
 function snap(){const v=$('#v'),c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;const x=c.getContext('2d');x.translate(c.width,0);x.scale(-1,1);x.drawImage(v,0,0);return c}
 async function shoot(){
-  $('#go').disabled=true;$('#bk').disabled=true;const N=fmt==='strip'?3:1,shots=[];
+  $('#go').disabled=true;$('#bk').disabled=true;const N=FMT[fmt].B.length,shots=[];
   for(let i=0;i<N;i++){
-    $('#ms').textContent=N>1?`Pose ${i+1} de ${N}`:'Sorria!';
-    for(let c=3;c>0;c--){cdn(c);await sleep(1000)}
+    /* da 2ª pose em diante a contagem é maior (cfg.si), para o convidado mudar de posição */
+    const w=i?Math.max(3,+cfg.si||6):3;
+    for(let c=w;c>0;c--){$('#ms').textContent=N<2?'Sorria!':i&&c>3?`Mude de pose! Prepare a pose ${i+1} de ${N}…`:`Pose ${i+1} de ${N}: sorria!`;cdn(c);await sleep(1000)}
     $('#cd').textContent='';shots.push(snap());if(!i)shotAt=Date.now();$('#fl').style.opacity=1;setTimeout(()=>$('#fl').style.opacity=0,150);await sleep(1100)}
   stopCam();const img=compose(fmt,shots).toDataURL('image/jpeg',.88);cfg.confirm?preview(img):result(img)}
 function preview(img){
@@ -564,7 +572,7 @@ const CK=(f,t)=>`<label class=ck><input type=checkbox data-f=${f} ${cfg[f]?'chec
 const CL=(f,t)=>`<label>${t}<input type=color data-f=${f} value="${cfg[f]||'#000000'}"></label>`;
 const dirty=()=>{dirt=1;const d=$('#dr');if(d){d.className='m';d.innerHTML='<i class="dot w"></i>Alterações não salvas'}};
 
-let dtab='tpl',cat='Todos',pf='both',tgv=0,HP='',HK='';
+let dtab='tpl',cat='Todos',pf='all',tgv=0,HP='',HK='';
 const TC={},tk=t=>t.id+[cfg.event,cfg.foot,cfg.dt,cfg.up,cfg.pb,cfg.rd,cfg.sz,cfg.bo,cfg.bz,cfg.bx,cfg.by,pvv,!!FR.bg].join('|');
 const R=(f,t,a,b)=>`<label>${t}<output>${cfg[f]}</output><input type=range min=${a} max=${b} data-f=${f} value=${cfg[f]}></label>`;
 const DT=[['tpl','Modelos','layout'],['ev','Dados do evento','calendar'],['sty','Estilo','palette'],['png','Moldura PNG','image']];
@@ -603,21 +611,22 @@ async function design(){
     <label>Borda das fotos<select data-f=pb>${[['w','Branca'],['acc','Cor de destaque'],['none','Sem borda']].map(([v,n])=>`<option value=${v} ${v===cfg.pb?'selected':''}>${n}</option>`).join('')}</select></label>${R('rd','Cantos arredondados',0,40)}
     <button data-a=tpl data-k="${cfg.tpl}">${ico('reset')}Restaurar cores do modelo</button></div>`,
   png:`<p class=m>Envie um PNG transparente (arte de designer, logo, moldura pronta). Ele é desenhado por cima do modelo.</p>
-    <label>Tirinha · 600×1800 px ${FR.strip?'<span class="ok tag"><i class=dot></i>ativa</span>':''}<input type=file data-k=strip accept=image/*></label>${frRow('strip')}<label>Polaroide · 900×1100 px ${FR.pola?'<span class="ok tag"><i class=dot></i>ativa</span>':''}<input type=file data-k=pola accept=image/*></label>${frRow('pola')}
+    ${FK.map(k=>`<label>${FMT[k].n} · ${FMT[k].W}×${FMT[k].H} px ${FR[k]?'<span class="ok tag"><i class=dot></i>ativa</span>':''}<input type=file data-k=${k} accept=image/*></label>${frRow(k)}`).join('')}
     `};
   return `<div class=studio><div class=card><div class=seg>${DT.map(([k,n,i])=>`<button class="${k===dtab?'on':''}" data-a=sub data-k=${k}>${ico(i)}${n}</button>`).join('')}</div>${P[dtab]}</div>
-  <aside class="card pvc"><div class=ph><h2>Prévia ao vivo</h2><div class=seg>${[['both','Ambas'],['strip','Tirinha'],['pola','Polaroide']].map(([k,n])=>`<button class="${k===pf?'on':''}" data-a=pf data-k=${k}>${n}</button>`).join('')}</div></div>
-  <div class=stage><div class=pvs data-pf=${pf}><img id=pa><img id=pb></div></div><p class=m style="font-size:12px;margin:12px 0 0">Alterações só chegam aos convidados após “Salvar e publicar” (Ctrl+S).</p></aside></div>`}
+  <aside class="card pvc"><div class=ph><h2>Prévia ao vivo</h2><div class=seg>${[['all','Todas'],...FK.map(k=>[k,FMT[k].n])].map(([k,n])=>`<button class="${k===pf?'on':''}" data-a=pf data-k=${k}>${n}</button>`).join('')}</div></div>
+  <div class=stage><div class=pvs data-pf=${pf}>${FK.map(k=>`<img data-pk=${k} class="${k===pf?'on':''}" style="flex:${(FMT[k].W/FMT[k].H).toFixed(3)} 1 0">`).join('')}</div></div><p class=m style="font-size:12px;margin:12px 0 0">Alterações só chegam aos convidados após “Salvar e publicar” (Ctrl+S).</p></aside></div>`}
 async function rules(){
   return `<div class=card style="max-width:680px"><h2>Regras para os convidados</h2>
   <label>Fotos permitidas por convidado<input type=number min=1 data-f=max value="${cfg.max}"></label>
-  ${CK('strip','Formato tirinha (3 fotos, 3 poses)')}${CK('pola','Formato polaroide (1 foto)')}${CK('confirm','Convidado confirma a foto antes de enviar (pode refazer sem gastar cota)')}${CK('geo','Registrar local da foto (o convidado precisa permitir a localização; o dado aparece só neste painel)')}
+  ${FK.map(k=>CK(k,FMT[k].r)).join('')}
+  ${R('si','Tempo para mudar de pose entre as fotos da tirinha (segundos)',3,15)}${CK('confirm','Convidado confirma a foto antes de enviar (pode refazer sem gastar cota)')}${CK('geo','Registrar local da foto (o convidado precisa permitir a localização; o dado aparece só neste painel)')}
   
   <p class=m>Lembre de clicar em “Salvar e publicar” para os convidados receberem as mudanças.</p></div>`}
 const PP=[['auto','Padrão da impressora'],['10x15','10×15 cm (4×6")',10,15],['a6','A6 · 10,5×14,8 cm',10.5,14.8],['13x18','13×18 cm (5×7")',13,18],['15x20','15×20 cm (6×8")',15,20],['a5','A5 · 14,8×21 cm',14.8,21],['a4','A4 · 21×29,7 cm',21,29.7],['let','Carta · 21,6×27,9 cm',21.6,27.9]];
-const PRD={stP:'auto',stW:5,stN:1,poP:'auto',poW:10,poN:1};let PR={...PRD},PEN=0;
+const PRD={stP:'auto',stW:5,stN:1,poP:'auto',poW:10,poN:1,a1P:'10x15',a1W:10,a1N:1,a2P:'15x20',a2W:15,a2N:1};let PR={...PRD},PEN=0;
 const nm=k=>k.charAt(0).toUpperCase()+k.slice(1),f1=v=>String(+v.toFixed(1)).replace('.',',');
-function lay(kind,pack){const st=kind==='strip',w=Math.max(1,+(st?PR.stW:PR.poW)||(st?5:10)),h=st?w*3:w*1100/900,req=st?PR.stN:PR.poN,pp=PP.find(x=>x[0]===(st?PR.stP:PR.poP));
+function lay(kind,pack){const F=FMT[kind],p=F.p,w=Math.max(1,+PR[p+'W']||PRD[p+'W']),h=w*F.H/F.W,req=PR[p+'N'],pp=PP.find(x=>x[0]===PR[p+'P']);
   let pg=pp&&pp[2]?[pp[2],pp[3]]:null;if(!pg&&pack)pg=[21,29.7];
   if(!pg){const n=req==='max'?1:Math.max(1,+req||1);return{w,h,n,pg:null,cols:n,rows:1,cap:n,over:0,req}}
   const fl=(pw,ph)=>{const c=Math.floor(pw/w+1e-6),r=Math.floor(ph/h+1e-6);return{pw,ph,cols:c,rows:r,cap:c*r}},
@@ -627,21 +636,21 @@ function lay(kind,pack){const st=kind==='strip',w=Math.max(1,+(st?PR.stW:PR.poW)
   return{w,h,n,pg:[B.pw,B.ph],cols:B.cols,rows:B.rows,cap:B.cap,over:0,req}}
 function sheet(k){const L=lay(k),pw=L.pg?L.pg[0]:L.w*L.cols*1.25,ph=L.pg?L.pg[1]:L.h*1.15,x0=(pw-L.cols*L.w)/2,y0=(ph-L.rows*L.h)/2;let it='';
   for(let i=0;i<L.n;i++){const c=i%L.cols,r=Math.floor(i/L.cols);it+=`<i style="position:absolute;left:${(x0+c*L.w)/pw*100}%;top:${(y0+r*L.h)/ph*100}%;width:${L.w/pw*100}%;height:${L.h/ph*100}%"></i>`}
-  const pp=PP.find(x=>x[0]===(k==='strip'?PR.stP:PR.poP))||[],hz=L.pg&&pp[2]&&L.pg[0]>pp[2],lim=L.pg&&!L.over&&L.req!=='max'&&+L.req>L.cap;
+  const pp=PP.find(x=>x[0]===PR[FMT[k].p+'P'])||[],hz=L.pg&&pp[2]&&L.pg[0]>pp[2],lim=L.pg&&!L.over&&L.req!=='max'&&+L.req>L.cap;
   return `<div class=sheet style="aspect-ratio:${pw}/${ph}"><div class=sit style="position:relative;height:100%">${it}</div></div><p class=m style="font-size:13px;margin:6px 0 0">Cada foto: <b>${f1(L.w)}×${f1(L.h)} cm</b> · <b>${L.n} por folha</b>${L.pg?' ('+L.cols+'×'+L.rows+')':''} · ${L.pg?'Folha '+f1(L.pg[0])+'×'+f1(L.pg[1])+' cm'+(hz?' (horizontal)':''):'Folha padrão da impressora'}${lim?'<br><span class="wr" style="color:var(--wa)">'+ico('warn')+'Só cabem '+L.cap+' nesta folha.</span>':''}${L.over?'<br><span class="err wr">'+ico('warn')+'Não cabe na folha escolhida. Reduza o tamanho ou escolha um papel maior.</span>':''}</p>`}
 async function prn(){
-  const blk=(k,t,pr)=>{const st=k==='strip',pp=st?'stP':'poP',wk=st?'stW':'poW';return `<div class=card><h2>${t}</h2>
+  const blk=k=>{const F=FMT[k],pp=F.p+'P',wk=F.p+'W',nk=F.p+'N';return `<div class=card><h2>${F.pt}</h2>
   <label>Papel<select data-p=${pp}>${PP.map(x=>`<option value=${x[0]} ${PR[pp]===x[0]?'selected':''}>${x[1]}</option>`).join('')}</select></label>
-  <label style="margin-top:14px">Tamanho da foto impressa</label><div class=chips id=ch-${k}>${pr.map(w=>`<button class="chip ${+PR[wk]===w?'on':''}" data-a=psz data-k="${k}:${w}">${w}×${st?w*3:f1(w*1100/900)} cm</button>`).join('')}</div>
+  <label style="margin-top:14px">Tamanho da foto impressa</label><div class=chips id=ch-${k}>${F.ch.map(w=>`<button class="chip ${+PR[wk]===w?'on':''}" data-a=psz data-k="${k}:${w}">${f1(w)}×${f1(w*F.H/F.W)} cm</button>`).join('')}</div>
   <label>Largura personalizada (cm)<input type=number step=.1 min=2 max=30 data-p=${wk} value="${PR[wk]}"></label>
-  <label>Cópias da mesma foto por folha<select data-p=${st?'stN':'poN'}>${[1,2,3,4,6,8,12,'max'].map(n=>`<option value=${n} ${PR[st?'stN':'poN']==n?'selected':''}>${n==='max'?'Máximo (encher a folha)':n}</option>`).join('')}</select></label>
+  <label>Cópias da mesma foto por folha<select data-p=${nk}>${[1,2,3,4,6,8,12,'max'].map(n=>`<option value=${n} ${PR[nk]==n?'selected':''}>${n==='max'?'Máximo (encher a folha)':n}</option>`).join('')}</select></label>
   <div id=sh-${k}>${sheet(k)}</div></div>`};
-  return `<div class=g2c>${blk('strip','Tirinha (proporção 1:3)',[3,4,5,6,7,8])}${blk('pola','Polaroide',[6,8,9,10,12,15])}</div>
+  return `<div class=g2c>${FK.map(blk).join('')}</div>
   <div class=card><h2>Liberação e testes</h2><label class=ck><input type=checkbox data-a=auto ${AUTO?'checked':''}> Imprimir automaticamente, sem aprovação (desligado: você decide cada foto)</label>
   <p class=m style="font-size:13px">Estes ajustes valem para este computador e já são aplicados na hora. Na janela de impressão do navegador, deixe a escala em 100% e as margens em “Nenhuma”.</p>
-  <button data-a=ptest data-k=strip>${ico('film')}Imprimir teste · tirinha</button><button data-a=ptest data-k=pola>${ico('polaroid')}Imprimir teste · polaroide</button></div>`}
-const packN=ps=>['strip','pola'].reduce((t,k)=>{const n=ps.filter(p=>p.fmt===k).length;return t+(n?Math.ceil(n/Math.max(1,lay(k,1).cap)):0)},0);
-function prUpd(){for(const k of['strip','pola']){const e=$('#sh-'+k);if(e)e.innerHTML=sheet(k);const w=+PR[k==='strip'?'stW':'poW'];document.querySelectorAll('#ch-'+k+' .chip').forEach(b=>b.classList.toggle('on',+b.dataset.k.split(':')[1]===w))}}
+  ${FK.map(k=>`<button data-a=ptest data-k=${k}>${ico(FMT[k].ic)}Imprimir teste · ${FMT[k].n.toLowerCase()}</button>`).join('')}</div>`}
+const packN=ps=>FK.reduce((t,k)=>{const n=ps.filter(p=>p.fmt===k).length;return t+(n?Math.ceil(n/Math.max(1,lay(k,1).cap)):0)},0);
+function prUpd(){for(const k of FK){const e=$('#sh-'+k);if(e)e.innerHTML=sheet(k);const w=+PR[FMT[k].p+'W'];document.querySelectorAll('#ch-'+k+' .chip').forEach(b=>b.classList.toggle('on',+b.dataset.k.split(':')[1]===w))}}
 /* ---------- imagem de exemplo das molduras + fotos 3x4 ---------- */
 let pvv=0,F34I=null,F34={qty:6,paper:'a4',gap:2,guides:true,z:100,ox:0,oy:0};
 const P34=PP.filter(x=>x[2]),saveF34=()=>kvSet('f34',{qty:F34.qty,paper:F34.paper,gap:F34.gap,guides:F34.guides}),
@@ -713,7 +722,7 @@ async function bgtab(){
   <div class=card><h2>Prévia</h2><div class=bgp><div id=bgpv></div><span>Exemplo de cartão sobre o fundo</span></div></div></div>`}
 function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.setValueAtTime(.2,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.5);o.start();o.stop(c.currentTime+.5);setTimeout(()=>c.close(),700)}catch(e){}}
 function toast(h){let b=$('#ts');if(!b){b=document.createElement('div');b.id='ts';b.onclick=act;document.body.appendChild(b)}const t=document.createElement('div');t.className='toast';t.innerHTML=h;t.addEventListener('click',e=>{if(e.target.closest('button'))setTimeout(()=>t.remove(),50)});b.appendChild(t);setTimeout(()=>t.remove(),25000)}
-function notify(nw){beep();const o=nw.length===1,fm=x=>x==='strip'?'Tirinha':'Polaroide',tx=o?nm(nw[0].k)+' · '+fm(nw[0].f):nw.length+' novas fotos';
+function notify(nw){beep();const o=nw.length===1,fm=fN,tx=o?nm(nw[0].k)+' · '+fm(nw[0].f):nw.length+' novas fotos';
   toast(`<span class=ti>${ico('camera')}</span><div><b>${o?'Nova foto':'Novas fotos'}</b><br><span class=m>${esc(tx)} aguardando liberação</span></div>${o?`<button class=pri data-a=pr data-k="${esc(nw[0].n)}">${ico('print')}Imprimir</button>`:''}<button data-a=gq>${ico('queue')}Ver fila</button>`);
   if('Notification' in window&&Notification.permission==='granted'&&document.hidden)try{new Notification('Cabine de Fotos',{body:tx+' aguardando liberação'})}catch(e){}}
 async function badge(){PEN=(await pAll()).filter(p=>p.status==='pending').length;document.title=(PEN?'('+PEN+') ':'')+'Cabine de Fotos';const q=document.querySelector('.sb nav [data-k=queue]');if(q)q.dataset.n=PEN;const b=$('#bc');if(b){b.textContent=PEN;b.hidden=!PEN}}
@@ -731,7 +740,7 @@ async function geocode(){if(GEOB)return;GEOB=1;
   GEOB=0}
 async function queue(){
   const ps=(await pAll()).sort((a,b)=>b.ts-a.ts),pe=ps.filter(p=>p.status==='pending'),pr=ps.filter(p=>p.status!=='pending');
-  const card=p=>`<div class="qi ${p.status==='pending'?'pend':''}"><img src="${p.img}"><b>${esc(nm(p.guest))}</b><span class=m>${p.fmt==='strip'?'Tirinha':'Polaroide'}</span>${metaHtml(p)}<div class=qb>${p.status==='pending'?`<button class=pri data-a=pr data-k="${esc(p.name)}">${ico('print')}Imprimir</button><button class=btn-del data-a=rm data-k="${esc(p.name)}">${ico('x')}Recusar</button>`:`<button data-a=pr data-k="${esc(p.name)}">${ico('print')}Reimprimir</button><a download="foto-${esc(p.guest)}-${p.ts}.jpg" href="${p.img}">${ico('download')}Baixar</a><button class="ic btn-del" title="Remover" aria-label="Remover" data-a=rm data-k="${esc(p.name)}">${ico('trash')}</button>`}</div></div>`;
+  const card=p=>`<div class="qi ${p.status==='pending'?'pend':''}"><img src="${p.img}"><b>${esc(nm(p.guest))}</b><span class=m>${esc(fN(p.fmt))}</span>${metaHtml(p)}<div class=qb>${p.status==='pending'?`<button class=pri data-a=pr data-k="${esc(p.name)}">${ico('print')}Imprimir</button><button class=btn-del data-a=rm data-k="${esc(p.name)}">${ico('x')}Recusar</button>`:`<button data-a=pr data-k="${esc(p.name)}">${ico('print')}Reimprimir</button><a download="foto-${esc(p.guest)}-${p.ts}.jpg" href="${p.img}">${ico('download')}Baixar</a><button class="ic btn-del" title="Remover" aria-label="Remover" data-a=rm data-k="${esc(p.name)}">${ico('trash')}</button>`}</div></div>`;
   return `<div class=card><div class=ph><h2>Aguardando liberação <small class=m>${pe.length}</small></h2><span><button class=pri data-a=pk ${pe.length?'':'disabled'} title="Junta fotos de convidados diferentes na mesma folha">${ico('layout')}Agrupar em folhas${pe.length?' ('+pe.length+' foto(s) → '+packN(pe)+' folha(s))':''}</button><button data-a=pa ${pe.length?'':'disabled'}>${ico('print')}Imprimir uma por vez</button></span></div><div class=qg>${pe.map(card).join('')||'<p class=m>Nenhuma foto aguardando.</p>'}</div></div>
   <div class=card><h2>Já impressas <small class=m>${pr.length}</small></h2><div class=qg>${pr.map(card).join('')||'<p class=m>Nada impresso ainda.</p>'}</div><p><button class=btn-del data-a=lq>${ico('trash')}Limpar fila deste computador</button></p></div>`}
 async function guests(){
@@ -740,7 +749,7 @@ async function guests(){
   return `<div class=card><h2>Convidados</h2><table><tr><th>Convidado</th><th>Fotos usadas</th><th></th></tr>${ks.map(k=>`<tr><td>${esc(k)}</td><td>${c[k]} / ${cfg.max}</td><td><button class=sm data-a=zr data-k="${esc(k)}">${ico('reset')}Zerar</button></td></tr>`).join('')||'<tr><td colspan=3 class=m>Nenhum convidado ainda.</td></tr>'}</table><p><button data-a=za>${ico('reset')}Zerar todos (novo evento)</button></p></div>`}
 /* ---------- BACKUP GLOBAL ---------- */
 async function exportBackup(withPh){
-  const fr={};['strip','pola','bg'].forEach(k=>{if(FR[k])fr[k]=FR[k].src});
+  const fr={};[...FK,'bg'].forEach(k=>{if(FR[k])fr[k]=FR[k].src});
   const data={app:'cabine-de-fotos',v:1,at:new Date().toISOString(),sync:S,cfg,frames:fr,bg:BG,pr:PR,f34:{qty:F34.qty,paper:F34.paper,gap:F34.gap,guides:F34.guides},auto:AUTO,photos:withPh?await pAll():[]};
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
   a.download='cabine-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
@@ -756,7 +765,7 @@ async function importBackup(file){
     for(const p of d.photos||[])await pPut(p);
     if(S.gid&&d.cfg){
       const files={'config.json':{content:JSON.stringify({...DEF,...d.cfg})}};
-      for(const k of['strip','pola','bg'])if(d.frames&&d.frames[k])files['frame-'+k+'.txt']={content:d.frames[k]};
+      for(const k of[...FK,'bg'])if(d.frames&&d.frames[k])files['frame-'+k+'.txt']={content:d.frames[k]};
       if(d.cfg.bgG&&d.bg&&d.bg.img)files['bg.txt']={content:JSON.stringify({img:d.bg.img,op:d.bg.op,z:d.bg.z,x:d.bg.x,y:d.bg.y})};
       try{await gSet(files)}catch(e){alert('Backup restaurado localmente, mas não consegui publicar no Gist ('+e.message+'). Confira o token.')}
     }
@@ -775,7 +784,7 @@ async function conn(){
 const mkqr=()=>{const q=$('#qr');if(!q)return;q.innerHTML='';if(S.gid&&window.QRCode)new QRCode(q,{text:$('#lk').value.trim()+'#g='+S.gid+'.'+S.tok,width:240,height:240,correctLevel:QRCode.CorrectLevel.L});q6prev()};
 let DM,PVC=null;const defDM=()=>{if(!DM){DM=document.createElement('canvas');DM.width=800;DM.height=600;const x=DM.getContext('2d'),g=x.createLinearGradient(0,0,800,600);g.addColorStop(0,'#fbcfe8');g.addColorStop(1,'#93c5fd');x.fillStyle=g;x.fillRect(0,0,800,600);x.fillStyle='rgba(255,255,255,.65)';x.beginPath();x.arc(400,250,95,0,7);x.fill();x.beginPath();x.ellipse(400,600,180,210,0,Math.PI,0);x.fill()}return DM};
 const getDM=()=>defDM();
-function prevNow(){const a=$('#pa');if(!a)return;const d=getDM();a.src=compose('strip',[d,d,d]).toDataURL('image/jpeg',.7);$('#pb').src=compose('pola',[d]).toDataURL('image/jpeg',.7);filt();thumbs()}
+function prevNow(){const ims=document.querySelectorAll('.pvs img[data-pk]');if(!ims.length)return;const d=getDM();ims.forEach(im=>{const k=im.dataset.pk;im.src=compose(k,fill(k,d)).toDataURL('image/jpeg',.7)});filt();thumbs()}
 const prev=()=>{clearTimeout(pt);pt=setTimeout(prevNow,120)};
 const filt=()=>{const q=($('#sq')||{value:''}).value.toLowerCase();document.querySelectorAll('.tp').forEach(b=>b.hidden=!((cat==='Todos'||b.dataset.cat===cat)&&b.dataset.n.includes(q)))};
 async function thumbs(){if(!$('#tg'))return;const v=++tgv;for(const t of TPL){if(v!==tgv)return;const im=$('img[data-t="'+t.id+'"]'),k=tk(t);if(!im)return;if(!TC[k]){TC[k]=compose('pola',[getDM()],{...cfg,...tc(t),nofr:1}).toDataURL('image/jpeg',.5);await sleep(0)}im.src=TC[k]}}
@@ -790,7 +799,7 @@ async function inp(e){const t=e.target;
     if(['qty','paper','gap','guides'].includes(g))saveF34();return upd34()}
   if(t.id==='bgf'){const f=t.files[0];if(f){BG.img=shrink(await createImageBitmap(f),1600).toDataURL('image/jpeg',.8);await kvSet('bg',BG);applyBG(BG);if(cfg.bgG)dirty();await page()}return}
   if(t.dataset.b){const b=t.dataset.b;BG[b]=+t.value;const o=t.parentNode.querySelector('output');if(o)o.textContent=t.value+(t.dataset.u||'');applyBG(BG);updBGp();kvSet('bg',BG);if(cfg.bgG&&BG.img)dirty();return}
-  if(t.type==='file'){const f=t.files[0];if(!f)return;const k=t.dataset.k,W=k==='strip'?600:900,H=k==='strip'?1800:1100,b=await createImageBitmap(f),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(b,0,0,W,H);newFr[k]=c.toDataURL('image/png');FR[k]=await loadImg(newFr[k]);dirty();return page()}
+  if(t.type==='file'){const f=t.files[0];if(!f)return;const k=t.dataset.k,W=FMT[k].W,H=FMT[k].H,b=await createImageBitmap(f),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(b,0,0,W,H);newFr[k]=c.toDataURL('image/png');FR[k]=await loadImg(newFr[k]);dirty();return page()}
   if(t.id==='qpp'){QPP=t.value;return q6prev()}
   const f=t.dataset.f;if(!f)return;
   cfg[f]=t.type==='checkbox'?t.checked:t.type==='number'?Math.max(1,+t.value||1):t.type==='range'?+t.value:t.value;if(t.type==='range'){const o=t.parentNode.querySelector('output');o&&(o.textContent=t.value)}dirty();if(f==='font'||t.type==='color'||f==='event'||f==='foot'||f==='dt')cfg.tpl=cfg.tpl;prev()}
@@ -838,7 +847,7 @@ function qrCard(){
   /* passos */
   const sy0=1420,sh=190,sx0=90,sw=W-180;
   x.save();x.shadowColor='rgba(0,0,0,.25)';x.shadowBlur=40;x.shadowOffsetY=14;rr(sx0,sy0,sw,sh,44);x.fillStyle='rgba(255,255,255,.95)';x.fill();x.restore();
-  const fm=[c.strip&&'Tirinha',c.pola&&'Polaroide'].filter(Boolean).join(' ou ')||'foto',
+  const on=FK.filter(k=>c[k]),fm=on.length>2?'o formato':on.map(fN).join(' ou ')||'foto',
   steps=[['1','Escaneie','com a câmera do celular'],['2','Digite seu nome','e escolha '+fm.toLowerCase()],['3','Sorria!','sua foto sai impressa']];
   const cw=sw/3;steps.forEach(([n,a,b],i)=>{const mx=sx0+cw*i+cw/2;
     if(i){x.strokeStyle='#e5e7eb';x.lineWidth=3;x.beginPath();x.moveTo(sx0+cw*i,sy0+36);x.lineTo(sx0+cw*i,sy0+sh-36);x.stroke()}
@@ -920,24 +929,24 @@ async function act(e){
   if(a==='bkx')return exportBackup(!!($('#bkp')&&$('#bkp').checked));
   if(a==='q34'){F34.qty=k==='full'?Math.max(1,lay34().per):+k;const i=$('input[data-g=qty]');if(i)i.value=F34.qty;saveF34();return upd34()}
   if(a==='p34')return print34();
-  if(a==='frx'){if(!confirm(k==='bg'?'Remover a foto de fundo das molduras?':'Remover a moldura PNG da '+(k==='strip'?'tirinha':'polaroide')+'?'))return;delete newFr[k];FR[k]=null;delFr[k]=1;bgClear();dirty();return page()}
+  if(a==='frx'){if(!confirm(k==='bg'?'Remover a foto de fundo das molduras?':'Remover a moldura PNG do formato '+fN(k)+'?'))return;delete newFr[k];FR[k]=null;delFr[k]=1;bgClear();dirty();return page()}
   if(a==='bgx'){BG.img=null;await kvSet('bg',BG);applyBG(BG);if(cfg.bgG)dirty();return page()}
   
   if(a==='tpl'){const m=TPL.find(x=>x.id===k);if(!m)return;Object.assign(cfg,tc(m));dirty();if(dtab!=='tpl')return page();document.querySelectorAll('.tp').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return prevNow()}
   if(a==='sub'){dtab=k;return page()}
   if(a==='cat'){cat=k;document.querySelectorAll('.chip').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return filt()}
-  if(a==='pf'){pf=k;$('.pvs').dataset.pf=k;document.querySelectorAll('.pvc .seg button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return}
+  if(a==='pf'){pf=k;$('.pvs').dataset.pf=k;document.querySelectorAll('.pvs img').forEach(i=>i.classList.toggle('on',i.dataset.pk===k));document.querySelectorAll('.pvc .seg button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return}
   if(a==='today'){cfg.dt=new Date().toLocaleDateString('pt-BR');dirty();return page()}
-  if(a==='psz'){const[kk,w]=k.split(':'),f=kk==='strip'?'stW':'poW';PR[f]=+w;kvSet('pr',PR);const i=$('input[data-p='+f+']');if(i)i.value=w;return prUpd()}
-  if(a==='ptest'){const d=getDM();return printImg(compose(k,k==='strip'?[d,d,d]:[d]).toDataURL('image/jpeg',.92),k)}
+  if(a==='psz'){const[kk,w]=k.split(':'),f=FMT[kk].p+'W';PR[f]=+w;kvSet('pr',PR);const i=$('input[data-p='+f+']');if(i)i.value=w;return prUpd()}
+  if(a==='ptest'){const d=getDM();return printImg(compose(k,fill(k,d)).toDataURL('image/jpeg',.92),k)}
   if(a==='gq')return show('queue');
   if(a==='notif'){await Notification.requestPermission();return page()}
   if(a==='pa'){for(const p of(await pAll()).filter(p=>p.status==='pending').sort((x,y)=>x.ts-y.ts)){printImg(p.img,p.fmt);p.status='printed';await pPut(p);await sleep(3000)}await badge();return page()}
   if(a==='auto'){AUTO=t.checked;return kvSet('auto',AUTO)}
   if(a==='pk'){const ps=(await pAll()).filter(p=>p.status==='pending').sort((x,y)=>x.ts-y.ts);if(!ps.length)return;
     if(!confirm('Imprimir '+ps.length+' foto(s) agrupadas em '+packN(ps)+' folha(s)?\nAs fotos ocupam o papel configurado em Impressão (sem papel definido, usa A4).'))return;
-    for(const kd of['strip','pola']){const g=ps.filter(p=>p.fmt===kd);if(!g.length)continue;const L=lay(kd,1);
-      if(!L.cap){alert('A foto '+(kd==='strip'?'tirinha':'polaroide')+' não cabe no papel escolhido. Ajuste em Impressão.');continue}
+    for(const kd of FK){const g=ps.filter(p=>p.fmt===kd);if(!g.length)continue;const L=lay(kd,1);
+      if(!L.cap){alert('A foto '+fN(kd)+' não cabe no papel escolhido. Ajuste em Impressão.');continue}
       printGrid(L,g.map(p=>p.img));for(const p of g){p.status='printed';await pPut(p)}await sleep(3000)}
     await badge();return page()}
   if(a==='sv')return save();
