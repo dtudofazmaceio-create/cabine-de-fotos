@@ -243,7 +243,7 @@ html.hasbg .sb{background:color-mix(in srgb,var(--sb) 84%,transparent);-webkit-b
 <script>
 const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms)),app=$('#app');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false,geo:true,bo:60,bz:100,bx:50,by:50,f1015:true,f1520:true,f1010:true,f7510:true,si:6,ly:'classic',ig:'',tag:'',lgOn:true,lg:{x:88,y:7,w:20,o:100},lgf:{},my:[],cam:'user',flash:false};
+const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false,geo:true,bo:60,bz:100,bx:50,by:50,f1015:true,f1520:true,f1010:true,f7510:true,si:6,ly:'classic',ig:'',tag:'',lgOn:true,lg:{x:88,y:7,w:20,o:100},lgf:{},my:[],cam:'user',flash:false,gdl:true};
 /* formatos de foto. Chave sem hífen (vai no nome do arquivo). W×H = canvas; B = caixas das fotos; T = [tamanho,y] de título/rodapé/data; p = prefixo das configs de impressão; ch = larguras sugeridas (cm) */
 const FMT={
  strip:{n:'Tirinha',s:'3 fotos, 3 poses',r:'Formato tirinha (3 fotos, 3 poses)',pt:'Tirinha (proporção 1:3)',ic:'film',W:600,H:1800,B:[0,1,2].map(i=>[40,40+i*510,520,480]),T:[[46,1640],[30,1692],[26,1744]],p:'st',ch:[3,4,5,6,7,8]},
@@ -291,6 +291,14 @@ function printImg(src,kind){
   d.write('<style>'+css+'</style>'+('<img src="'+src+'">').repeat(n));d.close();
   const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
+const slug=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'foto',
+fname=(g,ts)=>'foto-'+slug(cfg.event)+'-'+slug(g)+'-'+ts+'.jpg';
+/* salva a foto: no celular abre "Salvar imagem/Compartilhar"; no computador baixa o arquivo */
+async function saveImg(url,name){let bl;try{bl=await(await fetch(url)).blob()}catch(e){}
+  const mob=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
+  if(bl&&mob&&navigator.canShare){const file=new File([bl],name,{type:bl.type||'image/jpeg'});
+    if(navigator.canShare({files:[file]}))try{await navigator.share({files:[file],title:cfg.event});return}catch(e){if(e&&e.name==='AbortError')return}}
+  const a=document.createElement('a');a.href=bl?URL.createObjectURL(bl):url;a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{if(bl)URL.revokeObjectURL(a.href);a.remove()},2000)}
 const stopCam=()=>{stream&&stream.getTracks().forEach(t=>t.stop());stream=null};
 function cover(x,s,bx,by,bw,bh){const r=Math.max(bw/s.width,bh/s.height),w=bw/r,h=bh/r;x.drawImage(s,(s.width-w)/2,(s.height-h)/2,w,h,bx,by,bw,bh)}
 const FONTS=[['Clássica (serifa)','Georgia,serif'],['Moderna','Arial,sans-serif'],['Divertida','"Trebuchet MS",sans-serif'],['Impacto','"Arial Black",Impact,sans-serif'],['Cursiva','"Brush Script MT",cursive'],['Máquina de escrever','"Courier New",monospace'],['Elegante','"Palatino Linotype",Palatino,serif']];
@@ -619,7 +627,8 @@ function preview(img){
 
 function result(img){
   const k=guest.k,f=fmt,left=Math.max(0,cfg.max-guest.used-1);
-  app.innerHTML=`<header class=hero><h1>Sua foto ficou pronta!</h1></header><img class=res src="${img}"><p id=sm class=m></p><div id=ab class=fm></div>`;
+  app.innerHTML=`<header class=hero><h1>Sua foto ficou pronta!</h1></header><img class=res src="${img}"><p id=sm class=m></p><div id=ab class=fm></div>${cfg.gdl?`<div class=fm><button id=dl>${ico('download')}Baixar foto no celular</button></div><p class=m style="font-size:12px;margin:6px 0 0">No iPhone, toque em “Salvar imagem”. Se não abrir, toque e segure a foto.</p>`:''}`;
+  if(cfg.gdl){const ts=Date.now();$('#dl').onclick=()=>saveImg(img,fname(guest.n,ts))}
   const up=async()=>{
     $('#sm').className='m';$('#sm').innerHTML='<i class=spin></i>Enviando solicitação…';$('#ab').innerHTML='';
     try{const ts=Date.now(),meta=JSON.stringify({at:shotAt||ts,loc:await geo});
@@ -756,7 +765,7 @@ async function rules(){
   <label>Fotos permitidas por convidado<input type=number min=1 data-f=max value="${cfg.max}"></label>
   ${FK.map(k=>CK(k,FMT[k].r)).join('')}
   ${R('si','Tempo para mudar de pose entre as fotos da tirinha (segundos)',3,15)}
-  <label>Câmera ao abrir (o convidado pode trocar)<select data-f=cam>${[['user','Frontal (selfie)'],['environment','Traseira']].map(([v,n])=>`<option value=${v} ${cfg.cam===v?'selected':''}>${n}</option>`).join('')}</select></label>${CK('flash','Flash já ligado ao abrir a câmera (o convidado pode desligar)')}${CK('confirm','Convidado confirma a foto antes de enviar (pode refazer sem gastar cota)')}${CK('geo','Registrar local da foto (o convidado precisa permitir a localização; o dado aparece só neste painel)')}
+  <label>Câmera ao abrir (o convidado pode trocar)<select data-f=cam>${[['user','Frontal (selfie)'],['environment','Traseira']].map(([v,n])=>`<option value=${v} ${cfg.cam===v?'selected':''}>${n}</option>`).join('')}</select></label>${CK('flash','Flash já ligado ao abrir a câmera (o convidado pode desligar)')}${CK('gdl','Convidado pode baixar a foto com moldura no celular')}${CK('confirm','Convidado confirma a foto antes de enviar (pode refazer sem gastar cota)')}${CK('geo','Registrar local da foto (o convidado precisa permitir a localização; o dado aparece só neste painel)')}
   
   <p class=m>Lembre de clicar em “Salvar e publicar” para os convidados receberem as mudanças.</p></div>`}
 const PP=[['auto','Padrão da impressora'],['5x15','5×15 cm (tirinha)',5,15,1],['75x10','7,5×10 cm',7.5,10,1],['10x10','10×10 cm',10,10,1],['10x15','10×15 cm (4×6")',10,15],['a6','A6 · 10,5×14,8 cm',10.5,14.8],['13x18','13×18 cm (5×7")',13,18],['15x20','15×20 cm (6×8")',15,20],['a5','A5 · 14,8×21 cm',14.8,21],['a4','A4 · 21×29,7 cm',21,29.7],['let','Carta · 21,6×27,9 cm',21.6,27.9]];
@@ -876,8 +885,8 @@ async function geocode(){if(GEOB)return;GEOB=1;
   GEOB=0}
 async function queue(){
   const ps=(await pAll()).sort((a,b)=>b.ts-a.ts),pe=ps.filter(p=>p.status==='pending'),pr=ps.filter(p=>p.status!=='pending');
-  const card=p=>`<div class="qi ${p.status==='pending'?'pend':''}"><img src="${p.img}"><b>${esc(nm(p.guest))}</b><span class=m>${esc(fN(p.fmt))}</span>${metaHtml(p)}<div class=qb>${p.status==='pending'?`<button class=pri data-a=pr data-k="${esc(p.name)}">${ico('print')}Imprimir</button><button class=btn-del data-a=rm data-k="${esc(p.name)}">${ico('x')}Recusar</button>`:`<button data-a=pr data-k="${esc(p.name)}">${ico('print')}Reimprimir</button><a download="foto-${esc(p.guest)}-${p.ts}.jpg" href="${p.img}">${ico('download')}Baixar</a><button class="ic btn-del" title="Remover" aria-label="Remover" data-a=rm data-k="${esc(p.name)}">${ico('trash')}</button>`}</div></div>`;
-  return `<div class=card><div class=ph><h2>Aguardando liberação <small class=m>${pe.length}</small></h2><span><button class=pri data-a=pk ${pe.length?'':'disabled'} title="Junta fotos de convidados diferentes na mesma folha">${ico('layout')}Agrupar em folhas${pe.length?' ('+pe.length+' foto(s) → '+packN(pe)+' folha(s))':''}</button><button data-a=pa ${pe.length?'':'disabled'}>${ico('print')}Imprimir uma por vez</button></span></div><div class=qg>${pe.map(card).join('')||'<p class=m>Nenhuma foto aguardando.</p>'}</div></div>
+  const card=p=>`<div class="qi ${p.status==='pending'?'pend':''}"><img src="${p.img}"><b>${esc(nm(p.guest))}</b><span class=m>${esc(fN(p.fmt))}</span>${metaHtml(p)}<div class=qb>${p.status==='pending'?`<button class=pri data-a=pr data-k="${esc(p.name)}">${ico('print')}Imprimir</button><button class=btn-del data-a=rm data-k="${esc(p.name)}">${ico('x')}Recusar</button><button class=ic title="Baixar com moldura" aria-label="Baixar" data-a=dl data-k="${esc(p.name)}">${ico('download')}</button>`:`<button data-a=pr data-k="${esc(p.name)}">${ico('print')}Reimprimir</button><button data-a=dl data-k="${esc(p.name)}">${ico('download')}Baixar</button><button class="ic btn-del" title="Remover" aria-label="Remover" data-a=rm data-k="${esc(p.name)}">${ico('trash')}</button>`}</div></div>`;
+  return `<div class=card><div class=ph><h2>Aguardando liberação <small class=m>${pe.length}</small></h2><span><button class=pri data-a=pk ${pe.length?'':'disabled'} title="Junta fotos de convidados diferentes na mesma folha">${ico('layout')}Agrupar em folhas${pe.length?' ('+pe.length+' foto(s) → '+packN(pe)+' folha(s))':''}</button><button data-a=pa ${pe.length?'':'disabled'}>${ico('print')}Imprimir uma por vez</button><button data-a=dla ${ps.length?'':'disabled'} title="Baixa todas as fotos deste computador, com moldura">${ico('download')}Baixar todas (${ps.length})</button></span></div><div class=qg>${pe.map(card).join('')||'<p class=m>Nenhuma foto aguardando.</p>'}</div></div>
   <div class=card><h2>Já impressas <small class=m>${pr.length}</small></h2><div class=qg>${pr.map(card).join('')||'<p class=m>Nada impresso ainda.</p>'}</div><p><button class=btn-del data-a=lq>${ico('trash')}Limpar fila deste computador</button></p></div>`}
 async function guests(){
   const c={};if(GG)Object.keys(GG.files).forEach(n=>{const m=n.match(/^c-([a-z0-9]+)-\d+\.txt$/);if(m)c[m[1]]=(c[m[1]]||0)+1});
@@ -1094,6 +1103,8 @@ async function act(e){
       printGrid(L,g.map(p=>p.img));for(const p of g){p.status='printed';await pPut(p)}await sleep(3000)}
     await badge();return page()}
   if(a==='sv')return save();
+  if(a==='dl'){const p=await pGet(k);if(p)saveImg(p.img,fname(p.guest,p.ts));return}
+  if(a==='dla'){const ps=(await pAll()).sort((x,y)=>x.ts-y.ts);if(!ps.length||!confirm('Baixar '+ps.length+' foto(s) com moldura?\nSe o navegador perguntar, permita vários downloads.'))return;for(const p of ps){await saveImg(p.img,fname(p.guest,p.ts));await sleep(400)}return}
   if(a==='pr'){const p=await pGet(k);printImg(p.img,p.fmt);p.status='printed';await pPut(p);await badge();return page()}
   if(a==='rm'){await pDel(k);await badge();return page()}
   if(a==='lq'){if(confirm('Apagar todas as fotos guardadas neste computador?')){for(const p of await pAll())await pDel(p.name);page()}return}
