@@ -243,12 +243,14 @@ html.hasbg .sb{background:color-mix(in srgb,var(--sb) 84%,transparent);-webkit-b
 <script>
 const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms)),app=$('#app');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false,geo:true,bo:60,bz:100,bx:50,by:50,f1015:true,f1520:true,si:6};
+const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false,geo:true,bo:60,bz:100,bx:50,by:50,f1015:true,f1520:true,f1010:true,f7510:true,si:6};
 /* formatos de foto. Chave sem hífen (vai no nome do arquivo). W×H = canvas; B = caixas das fotos; T = [tamanho,y] de título/rodapé/data; p = prefixo das configs de impressão; ch = larguras sugeridas (cm) */
 const FMT={
  strip:{n:'Tirinha',s:'3 fotos, 3 poses',r:'Formato tirinha (3 fotos, 3 poses)',pt:'Tirinha (proporção 1:3)',ic:'film',W:600,H:1800,B:[0,1,2].map(i=>[40,40+i*510,520,480]),T:[[46,1640],[30,1692],[26,1744]],p:'st',ch:[3,4,5,6,7,8]},
  pola:{n:'Polaroide',s:'1 foto',r:'Formato polaroide (1 foto)',pt:'Polaroide',ic:'polaroid',W:900,H:1100,B:[[50,50,800,800]],T:[[58,935],[36,990],[30,1045]],p:'po',ch:[6,8,9,10,12,15]},
  f1015:{n:'Foto 10×15',s:'1 foto · 10×15 cm',r:'Formato 10×15 cm (1 foto)',pt:'Foto 10×15 (proporção 2:3)',ic:'image',W:1200,H:1800,B:[[70,70,1060,1360]],T:[[78,1570],[46,1645],[38,1710]],p:'a1',ch:[7,8,9,10]},
+ f1010:{n:'Foto 10×10',s:'1 foto quadrada · 10×10 cm',r:'Formato 10×10 cm (1 foto quadrada)',pt:'Foto 10×10 (quadrada)',ic:'image',W:1200,H:1200,B:[[70,70,1060,880]],T:[[70,1040],[40,1100],[34,1150]],p:'q1',ch:[6,8,10]},
+ f7510:{n:'Foto 7,5×10',s:'1 foto · 7,5×10 cm',r:'Formato 7,5×10 cm (1 foto)',pt:'Foto 7,5×10 (proporção 3:4)',ic:'image',W:900,H:1200,B:[[50,50,800,860]],T:[[58,1010],[36,1070],[30,1125]],p:'q2',ch:[6,7.5]},
  f1520:{n:'Foto 15×20',s:'1 foto · 15×20 cm',r:'Formato 15×20 cm (1 foto)',pt:'Foto 15×20 (proporção 3:4)',ic:'image',W:1500,H:2000,B:[[80,80,1340,1480]],T:[[90,1740],[54,1825],[44,1900]],p:'a2',ch:[9,12,13.5,15]}};
 const FK=Object.keys(FMT),fN=k=>(FMT[k]||{}).n||k,fill=(k,d)=>Array(FMT[k].B.length).fill(d);
 let db,S={},cfg={...DEF},FR={},stream,fmt,guest,timer,busy=0,newFr={},geo=null,shotAt=0;
@@ -579,7 +581,8 @@ const DT=[['tpl','Modelos','layout'],['ev','Dados do evento','calendar'],['sty',
 async function admin(){
   app.className='wide';AUTO=(await kvGet('auto'))===true;
   if(S.gid)try{await loadCfg()}catch(e){}
-  PR={...PRD,...((await kvGet('pr'))||(cfg.dup?{stN:2,stP:'10x15'}:{}))};
+  const sp=await kvGet('pr');PR={...PRD,...(sp||(cfg.dup?{stN:2,stP:'10x15'}:{}))};
+  if(sp&&(sp.v||0)<2){PR.v=2;PR.stW=5;PR.stP='5x15';kvSet('pr',PR)}
   F34={...F34,...((await kvGet('f34'))||{})};
   
   try{const b=await kvGet('bg');if(b)BG={...BG,...b}}catch(e){}if(!BG.img&&BGG)BG={...BG,...BGG};applyBG(BG);
@@ -623,8 +626,8 @@ async function rules(){
   ${R('si','Tempo para mudar de pose entre as fotos da tirinha (segundos)',3,15)}${CK('confirm','Convidado confirma a foto antes de enviar (pode refazer sem gastar cota)')}${CK('geo','Registrar local da foto (o convidado precisa permitir a localização; o dado aparece só neste painel)')}
   
   <p class=m>Lembre de clicar em “Salvar e publicar” para os convidados receberem as mudanças.</p></div>`}
-const PP=[['auto','Padrão da impressora'],['10x15','10×15 cm (4×6")',10,15],['a6','A6 · 10,5×14,8 cm',10.5,14.8],['13x18','13×18 cm (5×7")',13,18],['15x20','15×20 cm (6×8")',15,20],['a5','A5 · 14,8×21 cm',14.8,21],['a4','A4 · 21×29,7 cm',21,29.7],['let','Carta · 21,6×27,9 cm',21.6,27.9]];
-const PRD={stP:'auto',stW:5,stN:1,poP:'auto',poW:10,poN:1,a1P:'10x15',a1W:10,a1N:1,a2P:'15x20',a2W:15,a2N:1};let PR={...PRD},PEN=0;
+const PP=[['auto','Padrão da impressora'],['5x15','5×15 cm (tirinha)',5,15,1],['75x10','7,5×10 cm',7.5,10,1],['10x10','10×10 cm',10,10,1],['10x15','10×15 cm (4×6")',10,15],['a6','A6 · 10,5×14,8 cm',10.5,14.8],['13x18','13×18 cm (5×7")',13,18],['15x20','15×20 cm (6×8")',15,20],['a5','A5 · 14,8×21 cm',14.8,21],['a4','A4 · 21×29,7 cm',21,29.7],['let','Carta · 21,6×27,9 cm',21.6,27.9]];
+const PRD={v:2,stP:'5x15',stW:5,stN:1,poP:'auto',poW:10,poN:1,a1P:'10x15',a1W:10,a1N:1,a2P:'15x20',a2W:15,a2N:1,q1P:'10x10',q1W:10,q1N:1,q2P:'75x10',q2W:7.5,q2N:1};let PR={...PRD},PEN=0;
 const nm=k=>k.charAt(0).toUpperCase()+k.slice(1),f1=v=>String(+v.toFixed(1)).replace('.',',');
 function lay(kind,pack){const F=FMT[kind],p=F.p,w=Math.max(1,+PR[p+'W']||PRD[p+'W']),h=w*F.H/F.W,req=PR[p+'N'],pp=PP.find(x=>x[0]===PR[p+'P']);
   let pg=pp&&pp[2]?[pp[2],pp[3]]:null;if(!pg&&pack)pg=[21,29.7];
@@ -653,7 +656,7 @@ const packN=ps=>FK.reduce((t,k)=>{const n=ps.filter(p=>p.fmt===k).length;return 
 function prUpd(){for(const k of FK){const e=$('#sh-'+k);if(e)e.innerHTML=sheet(k);const w=+PR[FMT[k].p+'W'];document.querySelectorAll('#ch-'+k+' .chip').forEach(b=>b.classList.toggle('on',+b.dataset.k.split(':')[1]===w))}}
 /* ---------- imagem de exemplo das molduras + fotos 3x4 ---------- */
 let pvv=0,F34I=null,F34={qty:6,paper:'a4',gap:2,guides:true,z:100,ox:0,oy:0};
-const P34=PP.filter(x=>x[2]),saveF34=()=>kvSet('f34',{qty:F34.qty,paper:F34.paper,gap:F34.gap,guides:F34.guides}),
+const P34=PP.filter(x=>x[2]&&!x[4]),saveF34=()=>kvSet('f34',{qty:F34.qty,paper:F34.paper,gap:F34.gap,guides:F34.guides}),
 shrink=(b,max)=>{const r=Math.min(1,max/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*r);c.height=Math.round(b.height*r);c.getContext('2d').drawImage(b,0,0,c.width,c.height);return c};
 function bgClear(){pvv++;Object.keys(TC).forEach(k=>delete TC[k])}
 const pvBox=()=>{const RF=(f,t,a,b)=>`<label>${t}<output>${cfg[f]}</output><input type=range min=${a} max=${b} data-f=${f} value=${cfg[f]}></label>`;
