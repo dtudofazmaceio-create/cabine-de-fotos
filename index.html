@@ -98,7 +98,7 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--m)}
 .fb b{font-size:15px}.fb small{color:var(--m);font-size:12.5px;font-weight:400}
 .fb:hover{transform:translateY(-2px)}
 .cam{position:relative;aspect-ratio:4/3;background:#000;border-radius:22px;overflow:hidden;box-shadow:var(--sh);border:1px solid var(--b)}
-.cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}.cam video.nomir{transform:none}.camt{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:3}.camt button{width:48px;height:48px;min-width:0;border-radius:50%;padding:0;margin:0;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.4);display:grid;place-items:center;backdrop-filter:blur(6px);box-shadow:none}.camt button.on{background:#facc15;color:#111;border-color:#facc15}.camt button[hidden]{display:none!important}.camt button:disabled{opacity:.4}#sf{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9999;transition:opacity .08s}
+.cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}.cam video.nomir{transform:none}.cam{touch-action:none}.camz{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:min(70%,320px);display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:99px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);z-index:3}.camz input{flex:1;margin:0;accent-color:#facc15}.camz b{color:#fff;font-size:14px;min-width:40px;text-align:right}.camz[hidden]{display:none!important}.camt{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:3}.camt button{width:48px;height:48px;min-width:0;border-radius:50%;padding:0;margin:0;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.4);display:grid;place-items:center;backdrop-filter:blur(6px);box-shadow:none}.camt button.on{background:#facc15;color:#111;border-color:#facc15}.camt button[hidden]{display:none!important}.camt button:disabled{opacity:.4}#sf{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9999;transition:opacity .08s}
 #cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:130px;font-weight:800;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.6);animation:pop 1s ease-out}
 @keyframes pop{from{transform:scale(1.7);opacity:0}30%{opacity:1}to{transform:scale(.92);opacity:.9}}
 #fl{position:absolute;inset:0;background:#fff;opacity:0;transition:opacity .3s;pointer-events:none}
@@ -253,7 +253,7 @@ const FMT={
  f7510:{n:'Foto 7,5×10',s:'1 foto · 7,5×10 cm',r:'Formato 7,5×10 cm (1 foto)',pt:'Foto 7,5×10 (proporção 3:4)',ic:'image',W:900,H:1200,B:[[50,50,800,860]],T:[[58,1010],[36,1070],[30,1125]],p:'q2',ch:[6,7.5]},
  f1520:{n:'Foto 15×20',s:'1 foto · 15×20 cm',r:'Formato 15×20 cm (1 foto)',pt:'Foto 15×20 (proporção 3:4)',ic:'image',W:1500,H:2000,B:[[80,80,1340,1480]],T:[[90,1740],[54,1825],[44,1900]],p:'a2',ch:[9,12,13.5,15]}};
 const FK=Object.keys(FMT),fN=k=>(FMT[k]||{}).n||k,fill=(k,d)=>Array(FMT[k].B.length).fill(d);
-let fac=null,fon=null,mir=true,torch=false,db,S={},cfg={...DEF},FR={},stream,fmt,guest,timer,busy=0,newFr={},geo=null,shotAt=0;
+let fac=null,fon=null,mir=true,torch=false,zm=1,zh=null,db,S={},cfg={...DEF},FR={},stream,fmt,guest,timer,busy=0,newFr={},geo=null,shotAt=0;
 const getGeo=()=>new Promise(ok=>{if(!cfg.geo||!navigator.geolocation)return ok(null);let d=0;const f=v=>{if(!d){d=1;ok(v)}};setTimeout(()=>f(null),12000);try{navigator.geolocation.getCurrentPosition(p=>f({lat:+p.coords.latitude.toFixed(6),lng:+p.coords.longitude.toFixed(6),acc:Math.round(p.coords.accuracy||0)}),()=>f(null),{enableHighAccuracy:true,timeout:10000,maximumAge:60000})}catch(e){f(null)}});
 
 /* ---------- IndexedDB (credenciais, config local e fila/arquivo da estação) ---------- */
@@ -565,11 +565,11 @@ async function begin(f){
   let used;try{used=countOf(await gGet(),k)}catch(e){return $('#er').textContent='Sem conexão com o servidor.'}
   if(used>=cfg.max)return $('#er').textContent=`Você já usou suas ${cfg.max} foto(s) permitidas.`;
   fmt=f;guest={n,k,used};geo=getGeo();
-  app.innerHTML=`<div class=cam><video id=v playsinline muted></video><div id=cd></div><div id=fl></div><div class=camt><button id=fz hidden title="Flash" aria-label="Flash">${ico('zap')}</button><button id=sw hidden title="Trocar câmera" aria-label="Trocar câmera">${ico('flip')}</button></div><i class="cc a"></i><i class="cc b"></i><i class="cc c"></i><i class="cc d"></i></div><p id=ms class=m>Abrindo câmera…</p><div class=fm><button class=pri id=go disabled>${ico('play')}Começar</button><button id=bk>${ico('back')}Voltar</button></div>`;
+  app.innerHTML=`<div class=cam><video id=v playsinline muted></video><div id=cd></div><div id=fl></div><div class=camt><button id=fz hidden title="Flash" aria-label="Flash">${ico('zap')}</button><button id=sw hidden title="Trocar câmera" aria-label="Trocar câmera">${ico('flip')}</button></div><div class=camz hidden><input type=range id=zr min=1 max=4 step=0.1 value=1 aria-label="Zoom"><b id=zl>1x</b></div><i class="cc a"></i><i class="cc b"></i><i class="cc c"></i><i class="cc d"></i></div><p id=ms class=m>Abrindo câmera…</p><div class=fm><button class=pri id=go disabled>${ico('play')}Começar</button><button id=bk>${ico('back')}Voltar</button></div>`;
   $('#bk').onclick=()=>route();
   if(!fac)fac=cfg.cam==='environment'?'environment':'user';if(fon===null)fon=!!cfg.flash;
   $('#sw').onclick=async()=>{fac=fac==='user'?'environment':'user';$('#go').disabled=true;try{await openCam()}catch(e){fac=fac==='user'?'environment':'user';try{await openCam()}catch(e2){}}$('#go').disabled=false};
-  $('#fz').onclick=()=>{fon=!fon;camUI()};
+  $('#fz').onclick=()=>{fon=!fon;camUI()};$('#zr').oninput=e=>setZoom(+e.target.value);pinch($('.cam'));
   try{await openCam();
     $('#ms').textContent=FMT[f].B.length>1?`Vamos fazer ${FMT[f].B.length} poses! Entre uma e outra você terá ${Math.max(3,+cfg.si||6)} segundos para mudar de pose. Toque em Começar.`:'Toque em Começar e sorria!';
     $('#go').disabled=false;$('#go').onclick=shoot}
@@ -582,7 +582,20 @@ async function openCam(){stopCam();const v=$('#v');
   try{cap=tr.getCapabilities?tr.getCapabilities():{}}catch(e){}try{st=tr.getSettings?tr.getSettings():{}}catch(e){}
   torch=!!cap.torch;mir=(st.facingMode||fac)!=='environment';v.classList.toggle('nomir',!mir);
   let n=2;try{n=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput').length}catch(e){}
-  $('#sw').hidden=n<2;camUI()}
+  $('#sw').hidden=n<2;
+  /* zoom: óptico da câmera quando o navegador permite (Android/Chrome); senão, zoom digital (recorte) */
+  zh=cap.zoom&&cap.zoom.max>cap.zoom.min?cap.zoom:null;const zr=$('#zr');
+  zr.min=zh?zh.min:1;zr.max=zh?Math.min(zh.max,10):4;zr.step=zh&&zh.step?zh.step:.1;zm=zh?(st.zoom||zh.min):1;zr.value=zm;
+  $('.camz').hidden=false;setZoom(zm);camUI()}
+async function setZoom(z){const zr=$('#zr');if(!zr)return;z=Math.min(+zr.max,Math.max(+zr.min,z));zm=z;zr.value=z;
+  $('#zl').textContent=(zh?z/(zh.min||1):z).toFixed(1).replace('.',',').replace(',0','')+'x';const v=$('#v');
+  if(zh){v.style.transform='';try{await stream.getVideoTracks()[0].applyConstraints({advanced:[{zoom:z}]})}catch(e){}}
+  else v.style.transform=(mir?'scaleX(-1) ':'')+'scale('+z+')'}
+const zd=()=>zh?1:zm;
+function pinch(el){const P=new Map();let d0=0,z0=1;const dist=()=>{const[a,b]=[...P.values()];return Math.hypot(a.x-b.x,a.y-b.y)};
+  el.onpointerdown=e=>{if(e.target.closest('button,input'))return;P.set(e.pointerId,{x:e.clientX,y:e.clientY});if(P.size===2){d0=dist();z0=zm}};
+  el.onpointermove=e=>{if(!P.has(e.pointerId))return;P.set(e.pointerId,{x:e.clientX,y:e.clientY});if(P.size===2&&d0)setZoom(z0*dist()/d0)};
+  el.onpointerup=el.onpointercancel=e=>{P.delete(e.pointerId);if(P.size<2)d0=0}}
 /* flash: frontal = tela branca; traseira = lanterna do celular (quando o navegador permite) */
 function camUI(){const b=$('#fz');if(!b)return;const ok=mir||torch;b.hidden=!ok;b.classList.toggle('on',ok&&fon);
   b.title=b.ariaLabel='Flash '+(fon?'ligado':'desligado');const sw=$('#sw');if(sw)sw.title=sw.ariaLabel=mir?'Usar câmera traseira':'Usar câmera frontal'}
@@ -590,7 +603,7 @@ const setTorch=on=>{try{return stream.getVideoTracks()[0].applyConstraints({adva
 async function flashOn(){if(!fon)return;if(!mir&&torch){try{await setTorch(true)}catch(e){}return sleep(400)}
   if(!mir)return;let f=$('#sf');if(!f){f=document.createElement('div');f.id='sf';document.body.appendChild(f)}f.style.opacity=1;await sleep(300)}
 async function flashOff(){if(!fon)return;if(!mir&&torch)try{await setTorch(false)}catch(e){}const f=$('#sf');if(f)f.style.opacity=0}
-function snap(){const v=$('#v'),c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;const x=c.getContext('2d');if(mir){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(v,0,0);return c}
+function snap(){const v=$('#v'),z=zd(),vw=v.videoWidth,vh=v.videoHeight,sw=vw/z,sh=vh/z,c=document.createElement('canvas');c.width=Math.round(sw);c.height=Math.round(sh);const x=c.getContext('2d');if(mir){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(v,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,c.width,c.height);return c}
 async function shoot(){
   $('#go').disabled=true;$('#bk').disabled=true;$('#sw').disabled=$('#fz').disabled=true;const N=FMT[fmt].B.length,shots=[];
   for(let i=0;i<N;i++){
