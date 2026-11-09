@@ -98,7 +98,7 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--m)}
 .fb b{font-size:15px}.fb small{color:var(--m);font-size:12.5px;font-weight:400}
 .fb:hover{transform:translateY(-2px)}
 .cam{position:relative;aspect-ratio:4/3;background:#000;border-radius:22px;overflow:hidden;box-shadow:var(--sh);border:1px solid var(--b)}
-.cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}.cam video.nomir{transform:none}.camt{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:3}.camt button{width:48px;height:48px;min-width:0;border-radius:50%;padding:0;margin:0;background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.4);display:grid;place-items:center;backdrop-filter:blur(6px);box-shadow:none}.camt button.on{background:#facc15;color:#111;border-color:#facc15}.camt button[hidden]{display:none!important}.camt button:disabled{opacity:.4}#sf{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9999;transition:opacity .08s}
 #cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:130px;font-weight:800;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.6);animation:pop 1s ease-out}
 @keyframes pop{from{transform:scale(1.7);opacity:0}30%{opacity:1}to{transform:scale(.92);opacity:.9}}
 #fl{position:absolute;inset:0;background:#fff;opacity:0;transition:opacity .3s;pointer-events:none}
@@ -243,7 +243,7 @@ html.hasbg .sb{background:color-mix(in srgb,var(--sb) 84%,transparent);-webkit-b
 <script>
 const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms)),app=$('#app');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false,geo:true,bo:60,bz:100,bx:50,by:50,f1015:true,f1520:true,f1010:true,f7510:true,si:6,ly:'classic',ig:'',tag:'',lgOn:true,lg:{x:88,y:7,w:20,o:100},lgf:{},my:[]};
+const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false,geo:true,bo:60,bz:100,bx:50,by:50,f1015:true,f1520:true,f1010:true,f7510:true,si:6,ly:'classic',ig:'',tag:'',lgOn:true,lg:{x:88,y:7,w:20,o:100},lgf:{},my:[],cam:'user',flash:false};
 /* formatos de foto. Chave sem hífen (vai no nome do arquivo). W×H = canvas; B = caixas das fotos; T = [tamanho,y] de título/rodapé/data; p = prefixo das configs de impressão; ch = larguras sugeridas (cm) */
 const FMT={
  strip:{n:'Tirinha',s:'3 fotos, 3 poses',r:'Formato tirinha (3 fotos, 3 poses)',pt:'Tirinha (proporção 1:3)',ic:'film',W:600,H:1800,B:[0,1,2].map(i=>[40,40+i*510,520,480]),T:[[46,1640],[30,1692],[26,1744]],p:'st',ch:[3,4,5,6,7,8]},
@@ -253,7 +253,7 @@ const FMT={
  f7510:{n:'Foto 7,5×10',s:'1 foto · 7,5×10 cm',r:'Formato 7,5×10 cm (1 foto)',pt:'Foto 7,5×10 (proporção 3:4)',ic:'image',W:900,H:1200,B:[[50,50,800,860]],T:[[58,1010],[36,1070],[30,1125]],p:'q2',ch:[6,7.5]},
  f1520:{n:'Foto 15×20',s:'1 foto · 15×20 cm',r:'Formato 15×20 cm (1 foto)',pt:'Foto 15×20 (proporção 3:4)',ic:'image',W:1500,H:2000,B:[[80,80,1340,1480]],T:[[90,1740],[54,1825],[44,1900]],p:'a2',ch:[9,12,13.5,15]}};
 const FK=Object.keys(FMT),fN=k=>(FMT[k]||{}).n||k,fill=(k,d)=>Array(FMT[k].B.length).fill(d);
-let db,S={},cfg={...DEF},FR={},stream,fmt,guest,timer,busy=0,newFr={},geo=null,shotAt=0;
+let fac=null,fon=null,mir=true,torch=false,db,S={},cfg={...DEF},FR={},stream,fmt,guest,timer,busy=0,newFr={},geo=null,shotAt=0;
 const getGeo=()=>new Promise(ok=>{if(!cfg.geo||!navigator.geolocation)return ok(null);let d=0;const f=v=>{if(!d){d=1;ok(v)}};setTimeout(()=>f(null),12000);try{navigator.geolocation.getCurrentPosition(p=>f({lat:+p.coords.latitude.toFixed(6),lng:+p.coords.longitude.toFixed(6),acc:Math.round(p.coords.accuracy||0)}),()=>f(null),{enableHighAccuracy:true,timeout:10000,maximumAge:60000})}catch(e){f(null)}});
 
 /* ---------- IndexedDB (credenciais, config local e fila/arquivo da estação) ---------- */
@@ -565,22 +565,39 @@ async function begin(f){
   let used;try{used=countOf(await gGet(),k)}catch(e){return $('#er').textContent='Sem conexão com o servidor.'}
   if(used>=cfg.max)return $('#er').textContent=`Você já usou suas ${cfg.max} foto(s) permitidas.`;
   fmt=f;guest={n,k,used};geo=getGeo();
-  app.innerHTML=`<div class=cam><video id=v playsinline muted></video><div id=cd></div><div id=fl></div><i class="cc a"></i><i class="cc b"></i><i class="cc c"></i><i class="cc d"></i></div><p id=ms class=m>Abrindo câmera…</p><div class=fm><button class=pri id=go disabled>${ico('play')}Começar</button><button id=bk>${ico('back')}Voltar</button></div>`;
+  app.innerHTML=`<div class=cam><video id=v playsinline muted></video><div id=cd></div><div id=fl></div><div class=camt><button id=fz hidden title="Flash" aria-label="Flash">${ico('zap')}</button><button id=sw hidden title="Trocar câmera" aria-label="Trocar câmera">${ico('flip')}</button></div><i class="cc a"></i><i class="cc b"></i><i class="cc c"></i><i class="cc d"></i></div><p id=ms class=m>Abrindo câmera…</p><div class=fm><button class=pri id=go disabled>${ico('play')}Começar</button><button id=bk>${ico('back')}Voltar</button></div>`;
   $('#bk').onclick=()=>route();
-  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:960}},audio:false});
-    const v=$('#v');v.srcObject=stream;await v.play();
+  if(!fac)fac=cfg.cam==='environment'?'environment':'user';if(fon===null)fon=!!cfg.flash;
+  $('#sw').onclick=async()=>{fac=fac==='user'?'environment':'user';$('#go').disabled=true;try{await openCam()}catch(e){fac=fac==='user'?'environment':'user';try{await openCam()}catch(e2){}}$('#go').disabled=false};
+  $('#fz').onclick=()=>{fon=!fon;camUI()};
+  try{await openCam();
     $('#ms').textContent=FMT[f].B.length>1?`Vamos fazer ${FMT[f].B.length} poses! Entre uma e outra você terá ${Math.max(3,+cfg.si||6)} segundos para mudar de pose. Toque em Começar.`:'Toque em Começar e sorria!';
     $('#go').disabled=false;$('#go').onclick=shoot}
   catch(e){$('#ms').className='err';$('#ms').textContent='Não consegui acessar a câmera. Permita o acesso e recarregue a página.'}}
 
-function snap(){const v=$('#v'),c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;const x=c.getContext('2d');x.translate(c.width,0);x.scale(-1,1);x.drawImage(v,0,0);return c}
+/* abre a câmera escolhida (frontal = espelhada; traseira = sem espelho) */
+async function openCam(){stopCam();const v=$('#v');
+  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:fac},width:{ideal:1280},height:{ideal:960}},audio:false});
+  v.srcObject=stream;await v.play();const tr=stream.getVideoTracks()[0];let cap={},st={};
+  try{cap=tr.getCapabilities?tr.getCapabilities():{}}catch(e){}try{st=tr.getSettings?tr.getSettings():{}}catch(e){}
+  torch=!!cap.torch;mir=(st.facingMode||fac)!=='environment';v.classList.toggle('nomir',!mir);
+  let n=2;try{n=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput').length}catch(e){}
+  $('#sw').hidden=n<2;camUI()}
+/* flash: frontal = tela branca; traseira = lanterna do celular (quando o navegador permite) */
+function camUI(){const b=$('#fz');if(!b)return;const ok=mir||torch;b.hidden=!ok;b.classList.toggle('on',ok&&fon);
+  b.title=b.ariaLabel='Flash '+(fon?'ligado':'desligado');const sw=$('#sw');if(sw)sw.title=sw.ariaLabel=mir?'Usar câmera traseira':'Usar câmera frontal'}
+const setTorch=on=>{try{return stream.getVideoTracks()[0].applyConstraints({advanced:[{torch:on}]})}catch(e){return Promise.resolve()}};
+async function flashOn(){if(!fon)return;if(!mir&&torch){try{await setTorch(true)}catch(e){}return sleep(400)}
+  if(!mir)return;let f=$('#sf');if(!f){f=document.createElement('div');f.id='sf';document.body.appendChild(f)}f.style.opacity=1;await sleep(300)}
+async function flashOff(){if(!fon)return;if(!mir&&torch)try{await setTorch(false)}catch(e){}const f=$('#sf');if(f)f.style.opacity=0}
+function snap(){const v=$('#v'),c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;const x=c.getContext('2d');if(mir){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(v,0,0);return c}
 async function shoot(){
-  $('#go').disabled=true;$('#bk').disabled=true;const N=FMT[fmt].B.length,shots=[];
+  $('#go').disabled=true;$('#bk').disabled=true;$('#sw').disabled=$('#fz').disabled=true;const N=FMT[fmt].B.length,shots=[];
   for(let i=0;i<N;i++){
     /* da 2ª pose em diante a contagem é maior (cfg.si), para o convidado mudar de posição */
     const w=i?Math.max(3,+cfg.si||6):3;
     for(let c=w;c>0;c--){$('#ms').textContent=N<2?'Sorria!':i&&c>3?`Mude de pose! Prepare a pose ${i+1} de ${N}…`:`Pose ${i+1} de ${N}: sorria!`;cdn(c);await sleep(1000)}
-    $('#cd').textContent='';shots.push(snap());if(!i)shotAt=Date.now();$('#fl').style.opacity=1;setTimeout(()=>$('#fl').style.opacity=0,150);await sleep(1100)}
+    $('#cd').textContent='';await flashOn();shots.push(snap());await flashOff();if(!i)shotAt=Date.now();$('#fl').style.opacity=1;setTimeout(()=>$('#fl').style.opacity=0,150);await sleep(1100)}
   stopCam();const img=compose(fmt,shots).toDataURL('image/jpeg',.88);cfg.confirm?preview(img):result(img)}
 function preview(img){
   app.innerHTML=`<header class=hero><h1>Gostou?</h1><p class=m>Confira como ficou antes de enviar.</p></header><img class=res src="${img}"><div class=fm><button class=pri id=ok>${ico('print')}Solicitar impressão</button><button id=rf>${ico('reset')}Refazer</button></div>`;
@@ -623,6 +640,8 @@ conn:'<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 
 check:'<path d="M20 6L9 17l-5-5"/>',
 checkc:'<path d="M22 11.1V12a10 10 0 11-5.9-9.1"/><path d="M22 4L12 14l-3-3"/>',
 warn:'<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/>',
+zap:'<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>',
+flip:'<path d="M3 7h3l2-3h8l2 3h3v13H3z"/><path d="M9 13a3 3 0 015-2.2M15 13a3 3 0 01-5 2.2M14 8.6v2.3h-2.3M10 17.4v-2.3h2.3"/>',
 reset:'<path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
 x:'<path d="M18 6L6 18M6 6l12 12"/>',
 download:'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
@@ -723,7 +742,8 @@ async function rules(){
   return `<div class=card style="max-width:680px"><h2>Regras para os convidados</h2>
   <label>Fotos permitidas por convidado<input type=number min=1 data-f=max value="${cfg.max}"></label>
   ${FK.map(k=>CK(k,FMT[k].r)).join('')}
-  ${R('si','Tempo para mudar de pose entre as fotos da tirinha (segundos)',3,15)}${CK('confirm','Convidado confirma a foto antes de enviar (pode refazer sem gastar cota)')}${CK('geo','Registrar local da foto (o convidado precisa permitir a localização; o dado aparece só neste painel)')}
+  ${R('si','Tempo para mudar de pose entre as fotos da tirinha (segundos)',3,15)}
+  <label>Câmera ao abrir (o convidado pode trocar)<select data-f=cam>${[['user','Frontal (selfie)'],['environment','Traseira']].map(([v,n])=>`<option value=${v} ${cfg.cam===v?'selected':''}>${n}</option>`).join('')}</select></label>${CK('flash','Flash já ligado ao abrir a câmera (o convidado pode desligar)')}${CK('confirm','Convidado confirma a foto antes de enviar (pode refazer sem gastar cota)')}${CK('geo','Registrar local da foto (o convidado precisa permitir a localização; o dado aparece só neste painel)')}
   
   <p class=m>Lembre de clicar em “Salvar e publicar” para os convidados receberem as mudanças.</p></div>`}
 const PP=[['auto','Padrão da impressora'],['5x15','5×15 cm (tirinha)',5,15,1],['75x10','7,5×10 cm',7.5,10,1],['10x10','10×10 cm',10,10,1],['10x15','10×15 cm (4×6")',10,15],['a6','A6 · 10,5×14,8 cm',10.5,14.8],['13x18','13×18 cm (5×7")',13,18],['15x20','15×20 cm (6×8")',15,20],['a5','A5 · 14,8×21 cm',14.8,21],['a4','A4 · 21×29,7 cm',21,29.7],['let','Carta · 21,6×27,9 cm',21.6,27.9]];
