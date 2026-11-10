@@ -374,9 +374,16 @@ const stopCam=()=>{stream&&stream.getTracks().forEach(t=>t.stop());stream=null};
 function cover(x,s,bx,by,bw,bh){const r=Math.max(bw/s.width,bh/s.height),w=bw/r,h=bh/r;x.drawImage(s,(s.width-w)/2,(s.height-h)/2,w,h,bx,by,bw,bh)}
 const FONTS=[['Clássica (serifa)','Georgia,serif'],['Moderna','Arial,sans-serif'],['Divertida','"Trebuchet MS",sans-serif'],['Impacto','"Arial Black",Impact,sans-serif'],['Cursiva','"Brush Script MT",cursive'],['Máquina de escrever','"Courier New",monospace'],['Elegante','"Palatino Linotype",Palatino,serif']];
 const G='Georgia,serif',D='"Trebuchet MS",sans-serif',I='"Arial Black",Impact,sans-serif',A='Arial,sans-serif',FT='"Courier New",monospace',FB='"Brush Script MT",cursive',FE='"Palatino Linotype",Palatino,serif';
-const CATS=['Instagram','Empresarial','Moderno','Casamento','Aniversário','Infantil','Formatura','Corporativo','Festas','Sazonal','Amizade','Vintage','Polaroide','Molduras'];
+const CATS=['OAB Alagoas','Instagram','Empresarial','Moderno','Casamento','Aniversário','Infantil','Formatura','Corporativo','Festas','Sazonal','Amizade','Vintage','Polaroide','Molduras'];
 const DECOS=[['none','Sem decoração'],['confetti','Confete'],['dots','Bolinhas'],['stars','Estrelas'],['lines','Linhas clássicas'],['bars','Faixas'],['neon','Neon'],['flags','Bandeirinhas'],['leaves','Folhagem'],['hearts','Corações'],['balloons','Balões'],['waves','Ondas'],['floral','Floral'],['gold','Glitter dourado'],['deco','Art déco'],['snow','Neve'],['rays','Raios'],['checker','Xadrez'],['film','Filme'],['bubbles','Bolhas'],['stripes','Listras'],['sunburst','Raios retrô'],['grain','Grão vintage'],['memphis','Memphis'],['sparkle','Brilhos Y2K'],['polka','Poá'],['tape','Fita washi'],['clouds','Nuvens'],['daisy','Margaridas'],['fr-double','Moldura: Dupla'],['fr-round','Moldura: Arredondada'],['fr-scallop','Moldura: Festonada'],['fr-stamp','Moldura: Selo postal'],['fr-corners','Moldura: Cantos clássicos'],['fr-dash','Moldura: Tracejada'],['fr-wood','Moldura: Madeira'],['fr-gold2','Moldura: Ouro polido'],['fr-hearts2','Moldura: Corações'],['fr-stars2','Moldura: Estrelas'],['fr-bulbs','Moldura: Lâmpadas'],['fr-diamond','Moldura: Losangos'],['fr-ribbon','Moldura: Fitas de canto'],['fr-neon2','Moldura: Neon duplo'],['fr-paper','Moldura: Papel fotográfico'],['fr-lace','Moldura: Renda'],['fr-pixel','Moldura: Pixel'],['fr-rope','Moldura: Corda'],['fr-grad','Moldura: Degradê'],['fr-flower','Moldura: Flores'],['fr-leaf','Moldura: Folhas'],['fr-chain','Moldura: Corrente']];
 const TPL=[
+/* OAB Alagoas: azul institucional da OAB (RGB 0,53,82) + dourado de apoio. O brasão oficial deve ser enviado na aba Logo. */
+['oab1','OAB/AL Institucional','OAB Alagoas','#ffffff','#eef3f7','#003552','#c9a227',A,'none','corp'],
+['oab2','OAB/AL Azul e Dourado','OAB Alagoas','#003552','#001f33','#ffffff','#c9a227',FE,'fr-double','classic'],
+['oab3','OAB/AL Solenidade','OAB Alagoas','#003552','#00243a','#f5e6b3','#c9a227',FE,'fr-gold2','corp'],
+['oab4','OAB/AL Post Instagram','OAB Alagoas','#ffffff','#ffffff','#003552','#003552',A,'none','insta'],
+['oab5','OAB/AL Story','OAB Alagoas','#003552','#0a5a85','#ffffff','#c9a227',A,'none','story'],
+['oab6','OAB/AL Capa de Revista','OAB Alagoas','#003552','#003552','#ffffff','#c9a227',FE,'none','mag'],
 ['ig','Post Instagram','Instagram','#ffffff','#ffffff','#111827','#0095f6',A,'none','insta'],
 ['igd','Post Instagram Escuro','Instagram','#000000','#000000','#f5f5f5','#0095f6',A,'none','insta'],
 ['igp','Post Pastel','Instagram','#fdf2f8','#fdf2f8','#831843','#db2777',A,'none','insta'],
@@ -580,8 +587,8 @@ const LYF={
   x.save();x.strokeStyle='#fff';x.globalAlpha=.85;x.lineWidth=.3*u;x.beginPath();x.roundRect(4*u,H-8*u,W-20*u,5.4*u,2.7*u);x.stroke();x.restore();
   wr(x,'Enviar mensagem',7*u,H-4.5*u,2.3*u,{c:'#fff',al:.9,m:W-28*u});
   x.save();x.strokeStyle='#fff';x.lineWidth=.45*u;x.lineJoin='round';igHeart(x,W-12*u,H-5.3*u,1.9*u);igSend(x,W-5.2*u,H-5.3*u,1.9*u);x.restore()},
- corp(x,W,H,N,s,c){const u=uOf(W,H),m=5*u,fh=22*u,top=1.4*u,k=(c.sz||100)/100,dt=c.dt||new Date().toLocaleDateString('pt-BR'),bc=c.pb==='acc'?c.acc:'#fff',rd=c.rd||0,pd=c.pb==='none'?0:Math.round(.7*u);
-  x.fillStyle=c.acc;x.fillRect(0,0,W,top);
+ corp(x,W,H,N,s,c){const u=uOf(W,H),fi=String(c.d||'').startsWith('fr-')?3.6*u:0,m=5*u+fi,fh=22*u+fi,top=fi?0:1.4*u,k=(c.sz||100)/100,dt=c.dt||new Date().toLocaleDateString('pt-BR'),bc=c.pb==='acc'?c.acc:'#fff',rd=c.rd||0,pd=c.pb==='none'?0:Math.round(.7*u);
+  if(top){x.fillStyle=c.acc;x.fillRect(0,0,W,top)}
   stackB(N,m,top+m,W-2*m,H-fh-top-m,2*u).forEach((b,i)=>{
    if(pd){x.save();x.shadowColor='rgba(0,0,0,.18)';x.shadowBlur=u;x.fillStyle=bc;x.beginPath();x.roundRect(b[0]-pd,b[1]-pd,b[2]+2*pd,b[3]+2*pd,rd?rd+pd:0);x.fill();x.restore()}
    x.save();x.beginPath();x.roundRect(...b,rd);x.clip();cover(x,s[i],...b);x.restore()});
