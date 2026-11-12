@@ -1116,7 +1116,7 @@ async function admin(){
   app.className='wide';AUTO=(await kvGet('auto'))===true;
   if(S.gid)try{await loadCfg()}catch(e){}
   EVS=(await kvGet('evs'))||[];if(S.gid)await evUpsert(S.gid,cfg.event);
-  SH=(await kvGet('sh'))||null;const sp=await kvGet('pr');PR={...PRD,...(sp||(cfg.dup?{stN:2,stP:'10x15'}:{}))};
+  GH=(await kvGet('gh'))||[];const sp=await kvGet('pr');PR={...PRD,...(sp||(cfg.dup?{stN:2,stP:'10x15'}:{}))};if(PR.stPair){PR.gOn=true;PR.gN=2;PR.gP='10x15';delete PR.stPair;kvSet('pr',PR)}
   if(sp&&(sp.v||0)<2){PR.v=2;PR.stW=5;PR.stP='5x15';kvSet('pr',PR)}
   F34={...F34,...((await kvGet('f34'))||{})};
   
@@ -1191,7 +1191,7 @@ async function rules(){
   
   <p class=m>Lembre de clicar em “Salvar e publicar” para os convidados receberem as mudanças.</p></div>`}
 const PP=[['auto','Padrão da impressora'],['5x15','5×15 cm (tirinha)',5,15,1],['75x10','7,5×10 cm',7.5,10,1],['10x10','10×10 cm',10,10,1],['10x15','10×15 cm (4×6")',10,15],['a6','A6 · 10,5×14,8 cm',10.5,14.8],['13x18','13×18 cm (5×7")',13,18],['15x20','15×20 cm (6×8")',15,20],['a5','A5 · 14,8×21 cm',14.8,21],['a4','A4 · 21×29,7 cm',21,29.7],['let','Carta · 21,6×27,9 cm',21.6,27.9]];
-const PRD={v:2,stP:'5x15',stW:5,stN:1,poP:'auto',poW:10,poN:1,a1P:'10x15',a1W:10,a1N:1,a2P:'15x20',a2W:15,a2N:1,q1P:'10x10',q1W:10,q1N:1,q2P:'75x10',q2W:7.5,q2N:1,stPair:false,stWait:5,stM:2};let PR={...PRD},PEN=0;
+const PRD={v:2,stP:'5x15',stW:5,stN:1,poP:'auto',poW:10,poN:1,a1P:'10x15',a1W:10,a1N:1,a2P:'15x20',a2W:15,a2N:1,q1P:'10x10',q1W:10,q1N:1,q2P:'75x10',q2W:7.5,q2N:1,gOn:false,gN:2,gP:'10x15',gO:'auto',gM:2,gG:0,gC:false,gW:5};let PR={...PRD},PEN=0;
 const nm=k=>k.charAt(0).toUpperCase()+k.slice(1),f1=v=>String(+v.toFixed(1)).replace('.',',');
 function lay(kind,pack){const F=FMT[kind],p=F.p,w=Math.max(1,+PR[p+'W']||PRD[p+'W']),h=w*F.H/F.W,req=PR[p+'N'],pp=PP.find(x=>x[0]===PR[p+'P']);
   let pg=pp&&pp[2]?[pp[2],pp[3]]:null;if(!pg&&pack)pg=[21,29.7];
@@ -1202,49 +1202,60 @@ function lay(kind,pack){const F=FMT[kind],p=F.p,w=Math.max(1,+PR[p+'W']||PRD[p+'
   const n=pack||req==='max'?B.cap:Math.min(Math.max(1,+req||1),B.cap);
   return{w,h,n,pg:[B.pw,B.ph],cols:B.cols,rows:B.rows,cap:B.cap,over:0,req}}
 /* tirinhas de convidados diferentes juntas na mesma folha (ex.: 2 tirinhas 5×15 numa folha 10×15) */
-/* As tirinhas são redimensionadas automaticamente para caber 2 numa folha 10×15 (retrato), respeitando a margem escolhida (PR.stM, em mm) */
-const pairOn=()=>!!PR.stPair,pairG=()=>2,SPW=10,SPH=15;
-function stripGeo(){const m=Math.max(0,+PR.stM||0)/10,g=m,ws=(SPW-2*m-g)/2,hs=SPH-2*m,w=Math.min(ws,hs/3),h=w*3,x0=(SPW-(2*w+g))/2;
-  return{w,h,y:(SPH-h)/2,x:[x0,x0+w+g],m}}
-async function stripSheet(srcs){const PX=118.11,G=stripGeo(),c=document.createElement('canvas');c.width=Math.round(SPW*PX);c.height=Math.round(SPH*PX);const x=c.getContext('2d');
+/* ---------- Agrupar fotos de convidados diferentes na mesma folha (qualquer modelo, qualquer papel) ----------
+   As fotos são redimensionadas para caber N na folha escolhida, lado a lado e centralizadas. */
+const grpOn=()=>!!PR.gOn,grpN=()=>Math.max(1,+PR.gN||2);
+const gPaper=()=>{const p=PP.find(x=>x[0]===PR.gP&&x[2])||PP.find(x=>x[0]==='10x15');return[p[2],p[3]]};
+function grpGeo(k){const n=grpN(),F=FMT[k]||FMT.strip,a=F.W/F.H,[p0,p1]=gPaper(),m=Math.max(0,+PR.gM||0)/10,g=Math.max(0,+PR.gG||0)/10,o=PR.gO||'auto',lo=Math.min(p0,p1),hi=Math.max(p0,p1);let best=null;
+  for(const[pw,ph]of o==='p'?[[lo,hi]]:o==='l'?[[hi,lo]]:[[lo,hi],[hi,lo]])
+    for(let c=1;c<=n;c++){const r=Math.ceil(n/c),W=pw-2*m-(c-1)*g,H=ph-2*m-(r-1)*g;if(W<=0||H<=0)continue;const w=Math.min(W/c,H/r*a);if(!best||w>best.w+1e-9)best={pw,ph,c,r,w,h:w/a}}
+  if(!best)return null;const{pw,ph,c,r,w,h}=best,y0=(ph-(r*h+(r-1)*g))/2,pos=[];
+  for(let i=0;i<n;i++){const row=Math.floor(i/c),inRow=Math.min(c,n-row*c),bw=inRow*w+(inRow-1)*g;pos.push([(pw-bw)/2+(i%c)*(w+g),y0+row*(h+g)])}
+  return{...best,n,g,m,pos}}
+async function grpSheet(k,srcs){const G=grpGeo(k),PX=118.11,c=document.createElement('canvas');c.width=Math.round(G.pw*PX);c.height=Math.round(G.ph*PX);const x=c.getContext('2d');
   x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
-  for(let i=0;i<srcs.length&&i<2;i++){const im=await loadImg(srcs[i]);if(im)x.drawImage(im,G.x[i]*PX,G.y*PX,G.w*PX,G.h*PX)}
-  x.strokeStyle='#b0b0b0';x.lineWidth=2;x.setLineDash([14,10]);x.beginPath();x.moveTo(c.width/2,0);x.lineTo(c.width/2,c.height);x.stroke();
+  for(let i=0;i<srcs.length&&i<G.n;i++){const im=await loadImg(srcs[i]),[px,py]=G.pos[i];if(im)x.drawImage(im,px*PX,py*PX,G.w*PX,G.h*PX);
+    if(PR.gC){x.strokeStyle='#9ca3af';x.lineWidth=2;x.setLineDash([12,9]);x.strokeRect(px*PX,py*PX,G.w*PX,G.h*PX)}}
   return c}
-function printSheet(src){const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);const d=f.contentDocument;d.open();
-  d.write('<!doctype html><meta charset=utf-8><style>@page{margin:0;size:'+SPW+'cm '+SPH+'cm}html,body{margin:0}body{width:'+SPW+'cm;height:'+(SPH-.2)+'cm;overflow:hidden;display:flex;align-items:center;justify-content:center}img{display:block;max-width:'+SPW+'cm;max-height:'+(SPH-.2)+'cm}</style><img src="'+src+'">');d.close();
+function printSheet(src,pw,ph){const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);const d=f.contentDocument;d.open();
+  d.write('<!doctype html><meta charset=utf-8><style>@page{margin:0;size:'+pw+'cm '+ph+'cm}html,body{margin:0}body{width:'+pw+'cm;height:'+(ph-.2)+'cm;overflow:hidden;display:flex;align-items:center;justify-content:center}img{display:block;max-width:'+pw+'cm;max-height:'+(ph-.2)+'cm}</style><img src="'+src+'">');d.close();
   const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
-let SH=null;const setSH=v=>{SH=v;kvSet('sh',v)};
-/* tirinhas para juntar: a separada (mesmo já impressa, para reimpressão) vem primeiro, depois as pendentes */
-async function stripQueue(pend){const h=SH?await pGet(SH):null;if(SH&&!h)setSH(null);return h&&h.status!=='pending'?[h,...pend.filter(p=>p.name!==h.name)]:pend}
-const pendStrips=()=>pAll().then(a=>a.filter(p=>p.status==='pending'&&p.fmt==='strip').sort((x,y)=>x.ts-y.ts));
-async function printStripGroup(g){if(g.some(p=>p.name===SH))setSH(null);printSheet((await stripSheet(g.map(p=>p.img))).toDataURL('image/jpeg',.95));for(const p of g){p.status='printed';await pPut(p)}}
-/* imprime as tirinhas em grupos; a que sobrar sozinha só sai se solo=true */
-async function printStripsPaired(list,solo){const G=pairG();let left=null;
-  for(let i=0;i<list.length;i+=G){const g=list.slice(i,i+G);if(g.length<2&&!solo){left=g[0];break}await printStripGroup(g);await sleep(3000)}
-  return left}
-function sheet(k){if(k==='strip'&&pairOn()){const G=stripGeo(),b=i=>`<i style="position:absolute;left:${G.x[i]/SPW*100}%;top:${G.y/SPH*100}%;width:${G.w/SPW*100}%;height:${G.h/SPH*100}%"></i>`;
-  return `<div class=sheet style="aspect-ratio:${SPW}/${SPH}"><div class=sit style="position:relative;height:100%">${b(0)}${b(1)}<b style="position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed #999"></b></div></div><p class=m style="font-size:13px;margin:6px 0 0">Cada tirinha: <b>${f1(G.w)}×${f1(G.h)} cm</b> (ajustada automaticamente) · <b>2 por folha</b> (convidados diferentes) · Folha <b>10×15 cm</b> em pé · linha tracejada para corte</p>`}
+/* fotos "separadas": esperam completar a folha (podem ser pendentes ou já impressas, para reimpressão) */
+let GH=[];const setGH=v=>{GH=v;kvSet('gh',v)};
+async function grpList(k,pend){const h=[];for(const n of GH){const p=await pGet(n);if(p&&p.fmt===k)h.push(p)}return[...h,...pend.filter(p=>p.fmt===k&&!GH.includes(p.name))]}
+async function printGroup(k,g){const G=grpGeo(k);if(!G)return alert('A foto '+fN(k)+' não cabe no papel escolhido para agrupar.');
+  setGH(GH.filter(n=>!g.some(p=>p.name===n)));printSheet((await grpSheet(k,g.map(p=>p.img))).toDataURL('image/jpeg',.95),G.pw,G.ph);for(const p of g){p.status='printed';await pPut(p)}}
+/* imprime em folhas de N; o grupo incompleto que sobrar só sai se solo=true (senão é devolvido) */
+async function printGrouped(k,list,solo){const N=grpN();
+  for(let i=0;i<list.length;i+=N){const g=list.slice(i,i+N);if(g.length<N&&!solo)return g;await printGroup(k,g);await sleep(3000)}return[]}
+function sheet(k){if(grpOn()){const G=grpGeo(k);if(!G)return '<p class="err wr">'+ico('warn')+'Não cabe na folha escolhida. Diminua a margem ou o espaço entre as fotos.</p>';
+  const b=G.pos.map(([x,y])=>`<i style="position:absolute;left:${x/G.pw*100}%;top:${y/G.ph*100}%;width:${G.w/G.pw*100}%;height:${G.h/G.ph*100}%"></i>`).join('');
+  return `<div class=sheet style="aspect-ratio:${G.pw}/${G.ph}"><div class=sit style="position:relative;height:100%">${b}</div></div><p class=m style="font-size:13px;margin:6px 0 0">Cada foto: <b>${f1(G.w)}×${f1(G.h)} cm</b> (ajustada automaticamente) · <b>${G.n} por folha</b> (${G.c}×${G.r}) · Folha ${f1(G.pw)}×${f1(G.ph)} cm ${G.pw>G.ph?'deitada':'em pé'}</p>`}
   const L=lay(k),pw=L.pg?L.pg[0]:L.w*L.cols*1.25,ph=L.pg?L.pg[1]:L.h*1.15,x0=(pw-L.cols*L.w)/2,y0=(ph-L.rows*L.h)/2;let it='';
   for(let i=0;i<L.n;i++){const c=i%L.cols,r=Math.floor(i/L.cols);it+=`<i style="position:absolute;left:${(x0+c*L.w)/pw*100}%;top:${(y0+r*L.h)/ph*100}%;width:${L.w/pw*100}%;height:${L.h/ph*100}%"></i>`}
   const pp=PP.find(x=>x[0]===PR[FMT[k].p+'P'])||[],hz=L.pg&&pp[2]&&L.pg[0]>pp[2],lim=L.pg&&!L.over&&L.req!=='max'&&+L.req>L.cap;
   return `<div class=sheet style="aspect-ratio:${pw}/${ph}"><div class=sit style="position:relative;height:100%">${it}</div></div><p class=m style="font-size:13px;margin:6px 0 0">Cada foto: <b>${f1(L.w)}×${f1(L.h)} cm</b> · <b>${L.n} por folha</b>${L.pg?' ('+L.cols+'×'+L.rows+')':''} · ${L.pg?'Folha '+f1(L.pg[0])+'×'+f1(L.pg[1])+' cm'+(hz?' (horizontal)':''):'Folha padrão da impressora'}${lim?'<br><span class="wr" style="color:var(--wa)">'+ico('warn')+'Só cabem '+L.cap+' nesta folha.</span>':''}${L.over?'<br><span class="err wr">'+ico('warn')+'Não cabe na folha escolhida. Reduza o tamanho ou escolha um papel maior.</span>':''}</p>`}
 async function prn(){
   const blk=k=>{const F=FMT[k],pp=F.p+'P',wk=F.p+'W',nk=F.p+'N';return `<div class=card><h2>${F.pt}</h2>
-  ${k==='strip'&&pairOn()?'':`<label>Papel<select data-p=${pp}>${PP.map(x=>`<option value=${x[0]} ${PR[pp]===x[0]?'selected':''}>${x[1]}</option>`).join('')}</select></label>
+  ${grpOn()?'<p class=m style="font-size:13px;margin:0">Agrupamento ligado: o tamanho desta foto é ajustado automaticamente.</p>':`<label>Papel<select data-p=${pp}>${PP.map(x=>`<option value=${x[0]} ${PR[pp]===x[0]?'selected':''}>${x[1]}</option>`).join('')}</select></label>
   <label style="margin-top:14px">Tamanho da foto impressa</label><div class=chips id=ch-${k}>${F.ch.map(w=>`<button class="chip ${+PR[wk]===w?'on':''}" data-a=psz data-k="${k}:${w}">${f1(w)}×${f1(w*F.H/F.W)} cm</button>`).join('')}</div>
   <label>Largura personalizada (cm)<input type=number step=.1 min=2 max=30 data-p=${wk} value="${PR[wk]}"></label>
   <label>Cópias da mesma foto por folha<select data-p=${nk}>${[1,2,3,4,6,8,12,'max'].map(n=>`<option value=${n} ${PR[nk]==n?'selected':''}>${n==='max'?'Máximo (encher a folha)':n}</option>`).join('')}</select></label>`}
-  ${k==='strip'?`<label class=ck style="margin-top:10px"><input type=checkbox data-a=stpair ${PR.stPair?'checked':''}> Duas tirinhas por folha 10×15 (convidados diferentes, tamanho ajustado automaticamente)</label>
-  ${pairOn()?`<label>Margem branca nas bordas da folha<select data-p=stM>${[[0,'Sem margem (impressora sem borda) · tirinha 5×15 cm'],[1,'1 mm'],[2,'2 mm (recomendado)'],[3,'3 mm'],[4,'4 mm'],[5,'5 mm']].map(([v,n])=>`<option value=${v} ${+PR.stM===v?'selected':''}>${n}</option>`).join('')}</select></label>
-  <label>Na impressão automática, se só houver 1 tirinha, esperar a próxima por<select data-p=stWait>${[[1,'1 minuto'],[2,'2 minutos'],[3,'3 minutos'],[5,'5 minutos'],[10,'10 minutos'],[0,'Sempre esperar (não imprimir sozinha)']].map(([v,n])=>`<option value=${v} ${+PR.stWait===v?'selected':''}>${n}</option>`).join('')}</select></label>`:''}`:''}
   <div id=sh-${k}>${sheet(k)}</div></div>`};
-  return `<div class=g2c>${FK.map(blk).join('')}</div>
+  const SEL=(k,t,o)=>`<label>${t}<select data-p=${k}>${o.map(([v,n])=>`<option value=${v} ${String(PR[k])===String(v)?'selected':''}>${n}</option>`).join('')}</select></label>`;
+  const gcard=`<div class=card><h2>Agrupar fotos na mesma folha</h2><p class=m style="font-size:13px;margin:-6px 0 0">Junta fotos de convidados diferentes numa folha só, lado a lado e centralizadas. Vale para todos os modelos (tirinha, polaroide, 10×15…), e o tamanho de cada foto é ajustado ao papel.</p>
+  <label class=ck><input type=checkbox data-a=gon ${PR.gOn?'checked':''}> Agrupar fotos na mesma folha</label>
+  ${grpOn()?`<div class=g2c style="gap:0 16px">${SEL('gN','Quantas fotos por folha',[2,3,4,5,6,8,9,10,12].map(n=>[n,n+' fotos']))}${SEL('gP','Papel',PP.filter(x=>x[2]).map(x=>[x[0],x[1]]))}
+  ${SEL('gO','Posição da folha',[['auto','Automática (a que deixa as fotos maiores)'],['p','Em pé (retrato)'],['l','Deitada (paisagem)']])}${SEL('gM','Margem branca nas bordas',[[0,'Sem margem (impressora sem borda)'],[1,'1 mm'],[2,'2 mm'],[3,'3 mm'],[5,'5 mm'],[10,'1 cm']])}
+  ${SEL('gG','Espaço entre as fotos',[[0,'Nenhum (encostadas)'],[1,'1 mm'],[2,'2 mm'],[3,'3 mm'],[5,'5 mm']])}${SEL('gW','Impressão automática: se a folha não completar, esperar',[[1,'1 minuto'],[2,'2 minutos'],[3,'3 minutos'],[5,'5 minutos'],[10,'10 minutos'],[0,'Sempre esperar completar']])}</div>
+  <label class=ck><input type=checkbox data-a=gcut ${PR.gC?'checked':''}> Linha tracejada de corte em volta de cada foto</label>
+  <p class=m style="font-size:13px;margin:0">Cada modelo só é agrupado com fotos do mesmo modelo. Veja abaixo como fica a folha de cada um.</p>`:''}</div>`;
+  return `${gcard}<div class=g2c>${FK.map(blk).join('')}</div>
   <div class=card><h2>Liberação e testes</h2><label class=ck><input type=checkbox data-a=auto ${AUTO?'checked':''}> Imprimir automaticamente, sem aprovação (desligado: você decide cada foto)</label>
   <p class=m style="font-size:13px">Estes ajustes valem para este computador e já são aplicados na hora. Na janela de impressão do navegador, deixe a escala em 100% e as margens em “Nenhuma”.</p>
   ${FK.map(k=>`<button data-a=ptest data-k=${k}>${ico(FMT[k].ic)}Imprimir teste · ${FMT[k].n.toLowerCase()}</button>`).join('')}</div>`}
-const packN=ps=>FK.reduce((t,k)=>{const n=ps.filter(p=>p.fmt===k).length;return t+(n?Math.ceil(n/Math.max(1,k==='strip'&&pairOn()?2:lay(k,1).cap)):0)},0);
+const packN=ps=>FK.reduce((t,k)=>{const n=ps.filter(p=>p.fmt===k).length;return t+(n?Math.ceil(n/Math.max(1,grpOn()?grpN():lay(k,1).cap)):0)},0);
 function prUpd(){for(const k of FK){const e=$('#sh-'+k);if(e)e.innerHTML=sheet(k);const w=+PR[FMT[k].p+'W'];document.querySelectorAll('#ch-'+k+' .chip').forEach(b=>b.classList.toggle('on',+b.dataset.k.split(':')[1]===w))}}
 /* ---------- imagem de exemplo das molduras + fotos 3x4 ---------- */
 let pvv=0,F34I=null,F34={qty:6,paper:'a4',gap:2,guides:true,z:100,ox:0,oy:0};
@@ -1335,8 +1346,8 @@ async function geocode(){if(GEOB)return;GEOB=1;
   GEOB=0}
 async function queue(){
   const all=(await pAll()).sort((a,b)=>b.ts-a.ts),ps=all.filter(qf),pe=ps.filter(p=>p.status==='pending'),pr=ps.filter(p=>p.status!=='pending');
-  const card=p=>`<div class="qi ${p.status==='pending'?'pend':''}"><img src="${p.img}"><b>${esc(nm(p.guest))}</b><span class=m>${esc(fN(p.fmt))}</span>${p.name===SH&&pairOn()?`<span class=evt style="background:#7c3aed;color:#fff">Separada · esperando a 2ª tirinha</span>`:''}${EVS.length>1?`<span class=evt>${esc(p.evn||evName(p.ev)||cfg.event)}</span>`:''}${metaHtml(p)}<div class=qb>${p.status==='pending'?`<button class=pri data-a=pr data-k="${esc(p.name)}">${ico('print')}Imprimir</button><button class=btn-del data-a=rm data-k="${esc(p.name)}">${ico('x')}Recusar</button><button class=ic title="Baixar com moldura" aria-label="Baixar" data-a=dl data-k="${esc(p.name)}">${ico('download')}</button>`:`<button data-a=pr data-k="${esc(p.name)}">${ico('print')}Reimprimir</button><button data-a=dl data-k="${esc(p.name)}">${ico('download')}Baixar</button><button class="ic btn-del" title="Remover" aria-label="Remover" data-a=rm data-k="${esc(p.name)}">${ico('trash')}</button>`}</div></div>`;
-  return `${EVS.length>1?`<div class="chips qev">${[['all','Todos os eventos'],...EVS.map(e=>[e.gid,e.name])].map(([k,n])=>{const c=all.filter(p=>p.status==='pending'&&(k==='all'||(p.ev||S.gid)===k)).length;return `<button class="chip ${QE===k?'on':''}" data-a=qe data-k="${k}">${esc(n)}${c?' · '+c:''}</button>`}).join('')}</div>`:''}<div class=card><div class=ph><h2>Aguardando liberação <small class=m>${pe.length}</small></h2><span><button class=pri data-a=pk ${pe.length?'':'disabled'} title="Junta fotos de convidados diferentes na mesma folha">${ico('layout')}Agrupar em folhas${pe.length?' ('+pe.length+' foto(s) → '+packN(pe)+' folha(s))':''}</button><button data-a=pa ${pe.length?'':'disabled'}>${ico('print')}Imprimir uma por vez</button><button data-a=dla ${ps.length?'':'disabled'} title="Baixa todas as fotos deste computador, com moldura">${ico('download')}Baixar todas (${ps.length})</button></span></div>${pairOn()?`<p class=m style="font-size:13px;margin:0 0 10px">${ico('film')} Tirinhas saem juntas, 2 por folha 10×15. Clique em Imprimir em duas tirinhas (pendentes ou já impressas) e elas saem na mesma folha.</p>${SH&&all.some(p=>p.name===SH)?`<div class="card alert" style="margin:0 0 12px"><div class=al><span class=ai>${ico('film')}</span><div><b>Tirinha de ${esc(nm((all.find(p=>p.name===SH)||{}).guest||''))} separada</b><br><span class=m>Ela sai junto com a próxima tirinha que você mandar imprimir.</span></div></div><button data-a=hsolo>${ico('print')}Imprimir sozinha agora</button><button data-a=hx>${ico('x')}Desfazer</button></div>`:''}`:(ps.some(p=>p.fmt==='strip')?`<p class=m style="font-size:13px;margin:0 0 10px">${ico('film')} Para juntar 2 tirinhas numa folha 10×15, ative a opção em <button class=sm data-a=tab data-k=prn>Tamanhos de impressão</button></p>`:'')}<div class=qg>${pe.map(card).join('')||'<p class=m>Nenhuma foto aguardando.</p>'}</div></div>
+  const card=p=>`<div class="qi ${p.status==='pending'?'pend':''}"><img src="${p.img}"><b>${esc(nm(p.guest))}</b><span class=m>${esc(fN(p.fmt))}</span>${GH.includes(p.name)&&grpOn()?`<span class=evt style="background:#7c3aed;color:#fff">Separada · esperando completar a folha</span>`:''}${EVS.length>1?`<span class=evt>${esc(p.evn||evName(p.ev)||cfg.event)}</span>`:''}${metaHtml(p)}<div class=qb>${p.status==='pending'?`<button class=pri data-a=pr data-k="${esc(p.name)}">${ico('print')}Imprimir</button><button class=btn-del data-a=rm data-k="${esc(p.name)}">${ico('x')}Recusar</button><button class=ic title="Baixar com moldura" aria-label="Baixar" data-a=dl data-k="${esc(p.name)}">${ico('download')}</button>`:`<button data-a=pr data-k="${esc(p.name)}">${ico('print')}Reimprimir</button><button data-a=dl data-k="${esc(p.name)}">${ico('download')}Baixar</button><button class="ic btn-del" title="Remover" aria-label="Remover" data-a=rm data-k="${esc(p.name)}">${ico('trash')}</button>`}</div></div>`;
+  return `${EVS.length>1?`<div class="chips qev">${[['all','Todos os eventos'],...EVS.map(e=>[e.gid,e.name])].map(([k,n])=>{const c=all.filter(p=>p.status==='pending'&&(k==='all'||(p.ev||S.gid)===k)).length;return `<button class="chip ${QE===k?'on':''}" data-a=qe data-k="${k}">${esc(n)}${c?' · '+c:''}</button>`}).join('')}</div>`:''}<div class=card><div class=ph><h2>Aguardando liberação <small class=m>${pe.length}</small></h2><span><button class=pri data-a=pk ${pe.length?'':'disabled'} title="Junta fotos de convidados diferentes na mesma folha">${ico('layout')}Agrupar em folhas${pe.length?' ('+pe.length+' foto(s) → '+packN(pe)+' folha(s))':''}</button><button data-a=pa ${pe.length?'':'disabled'}>${ico('print')}Imprimir uma por vez</button><button data-a=dla ${ps.length?'':'disabled'} title="Baixa todas as fotos deste computador, com moldura">${ico('download')}Baixar todas (${ps.length})</button></span></div>${grpOn()?`<p class=m style="font-size:13px;margin:0 0 10px">${ico('layout')} Agrupamento ligado: ${grpN()} fotos do mesmo modelo por folha. Clique em Imprimir (ou Reimprimir) nas fotos e, ao completar ${grpN()}, a folha é impressa.</p>${FK.map(kd=>{const hs=all.filter(p=>GH.includes(p.name)&&p.fmt===kd);return hs.length?`<div class="card alert" style="margin:0 0 12px"><div class=al><span class=ai>${ico(FMT[kd].ic)}</span><div><b>Folha de ${esc(fN(kd).toLowerCase())}: ${hs.length} de ${grpN()} separada(s)</b><br><span class=m>${hs.map(p=>esc(nm(p.guest))).join(', ')} · falta${grpN()-hs.length>1?'m':''} ${grpN()-hs.length}</span></div></div><button data-a=hsolo data-k=${kd}>${ico('print')}Imprimir assim mesmo</button><button data-a=hx data-k=${kd}>${ico('x')}Desfazer</button></div>`:''}).join('')}`:`<p class=m style="font-size:13px;margin:0 0 10px">${ico('layout')} Para juntar várias fotos numa folha só, ative <button class=sm data-a=tab data-k=prn>Agrupar fotos na mesma folha</button></p>`}<div class=qg>${pe.map(card).join('')||'<p class=m>Nenhuma foto aguardando.</p>'}</div></div>
   <div class=card><h2>Já impressas <small class=m>${pr.length}</small></h2><div class=qg>${pr.map(card).join('')||'<p class=m>Nada impresso ainda.</p>'}</div><p><button class=btn-del data-a=lq>${ico('trash')}Limpar fila deste computador</button></p></div>`}
 async function guests(){
   const c={};if(GG)Object.keys(GG.files).forEach(n=>{const m=n.match(/^c-([a-z0-9]+)-\d+\.txt$/);if(m)c[m[1]]=(c[m[1]]||0)+1});
@@ -1547,19 +1558,19 @@ async function act(e){
   if(a==='pf'){pf=k;if(dtab==='logo')return page();$('.pvs').dataset.pf=k;document.querySelectorAll('.pvs img').forEach(i=>i.classList.toggle('on',i.dataset.pk===k));document.querySelectorAll('.pvc .seg button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return}
   if(a==='today'){cfg.dt=new Date().toLocaleDateString('pt-BR');dirty();return page()}
   if(a==='psz'){const[kk,w]=k.split(':'),f=FMT[kk].p+'W';PR[f]=+w;kvSet('pr',PR);const i=$('input[data-p='+f+']');if(i)i.value=w;return prUpd()}
-  if(a==='ptest'){const d=getDM();if(k==='strip'&&pairOn()){const u=compose(k,fill(k,d)).toDataURL('image/jpeg',.92);return printSheet((await stripSheet([u,u])).toDataURL('image/jpeg',.95))}return printImg(compose(k,fill(k,d)).toDataURL('image/jpeg',.92),k)}
+  if(a==='ptest'){const d=getDM();if(grpOn()){const G=grpGeo(k);if(!G)return alert('Não cabe na folha escolhida.');const u=compose(k,fill(k,d)).toDataURL('image/jpeg',.92);return printSheet((await grpSheet(k,Array(G.n).fill(u))).toDataURL('image/jpeg',.95),G.pw,G.ph)}return printImg(compose(k,fill(k,d)).toDataURL('image/jpeg',.92),k)}
   if(a==='gq')return show('queue');
   if(a==='notif'){await Notification.requestPermission();return page()}
-  if(a==='pa'){const pq=(await pAll()).filter(p=>p.status==='pending'&&qf(p)).sort((x,y)=>x.ts-y.ts),po=pairOn();
-    if(po)await printStripsPaired(await stripQueue(pq.filter(p=>p.fmt==='strip')),1);
-    for(const p of pq.filter(p=>!po||p.fmt!=='strip')){printImg(p.img,p.fmt);p.status='printed';await pPut(p);await sleep(3000)}await badge();return page()}
+  if(a==='pa'){const pq=(await pAll()).filter(p=>p.status==='pending'&&qf(p)).sort((x,y)=>x.ts-y.ts),po=grpOn();
+    if(po)for(const kd of FK)await printGrouped(kd,await grpList(kd,pq),1);
+    for(const p of pq.filter(p=>!po)){printImg(p.img,p.fmt);p.status='printed';await pPut(p);await sleep(3000)}await badge();return page()}
   if(a==='auto'){AUTO=t.checked;return kvSet('auto',AUTO)}
-  if(a==='stpair'){PR.stPair=t.checked;
-    kvSet('pr',PR);return page()}
+  if(a==='gon'){PR.gOn=t.checked;kvSet('pr',PR);return page()}
+  if(a==='gcut'){PR.gC=t.checked;kvSet('pr',PR);return}
   if(a==='pk'){const ps=(await pAll()).filter(p=>p.status==='pending'&&qf(p)).sort((x,y)=>x.ts-y.ts);if(!ps.length)return;
     if(!confirm('Imprimir '+ps.length+' foto(s) agrupadas em '+packN(ps)+' folha(s)?\nAs fotos ocupam o papel configurado em Impressão (sem papel definido, usa A4).'))return;
-    if(pairOn())await printStripsPaired(await stripQueue(ps.filter(p=>p.fmt==='strip')),1);
-    for(const kd of FK){if(kd==='strip'&&pairOn())continue;const g=ps.filter(p=>p.fmt===kd);if(!g.length)continue;const L=lay(kd,1);
+    if(grpOn()){for(const kd of FK)await printGrouped(kd,await grpList(kd,ps),1);await badge();return page()}
+    for(const kd of FK){const g=ps.filter(p=>p.fmt===kd);if(!g.length)continue;const L=lay(kd,1);
       if(!L.cap){alert('A foto '+fN(kd)+' não cabe no papel escolhido. Ajuste em Impressão.');continue}
       printGrid(L,g.map(p=>p.img));for(const p of g){p.status='printed';await pPut(p)}await sleep(3000)}
     await badge();return page()}
@@ -1567,16 +1578,15 @@ async function act(e){
   if(a==='dl'){const p=await pGet(k);if(p)saveImg(p.img,fname(p.guest,p.ts));return}
   if(a==='dla'){const ps=(await pAll()).sort((x,y)=>x.ts-y.ts);if(!ps.length||!confirm('Baixar '+ps.length+' foto(s) com moldura?\nSe o navegador perguntar, permita vários downloads.'))return;for(const p of ps){await saveImg(p.img,fname(p.guest,p.ts));await sleep(400)}return}
   if(a==='pr'){const p=await pGet(k);if(!p)return;
-    if(p.fmt==='strip'&&pairOn()){
-      const h=SH&&SH!==p.name?await pGet(SH):null;
-      if(h){await printStripGroup([h,p]);await badge();return page()}
-      const o=p.status==='pending'?(await pendStrips()).filter(x=>x.name!==p.name):[];
-      if(o.length){await printStripGroup([p,o[0]]);await badge();return page()}
-      setSH(p.name);toast(`<span class=ti>${ico('film')}</span><div><b>Tirinha de ${esc(nm(p.guest))} separada</b><br><span class=m>Clique em Imprimir (ou Reimprimir) em outra tirinha e as duas saem juntas na mesma folha 10×15.</span></div>`);return page()}
+    if(grpOn()){const k2=p.fmt,N=grpN(),g=(await grpList(k2,[])).filter(x=>x.name!==p.name);g.push(p);
+      if(g.length<N&&p.status==='pending')g.push(...(await pAll()).filter(x=>x.status==='pending'&&x.fmt===k2&&!g.some(y=>y.name===x.name)).sort((x,y)=>x.ts-y.ts).slice(0,N-g.length));
+      if(g.length>=N){await printGroup(k2,g.slice(0,N));await badge();return page()}
+      if(!GH.includes(p.name))setGH([...GH,p.name]);
+      toast(`<span class=ti>${ico('layout')}</span><div><b>${esc(fN(k2))} de ${esc(nm(p.guest))} separada · ${g.length} de ${N}</b><br><span class=m>Falta${N-g.length>1?'m':''} ${N-g.length} para completar a folha. Clique em Imprimir (ou Reimprimir) em outra ${esc(fN(k2).toLowerCase())}.</span></div>`);return page()}
     printImg(p.img,p.fmt);p.status='printed';await pPut(p);await badge();return page()}
-  if(a==='hx'){setSH(null);return page()}
-  if(a==='hsolo'){const h=SH&&await pGet(SH);if(h){await printStripGroup([h]);await badge()}else setSH(null);return page()}
-  if(a==='rm'){if(k===SH)setSH(null);await pDel(k);await badge();return page()}
+  if(a==='hx'){const hs=await grpList(k,[]);setGH(GH.filter(n=>!hs.some(p=>p.name===n)));return page()}
+  if(a==='hsolo'){const hs=await grpList(k,[]);if(hs.length){await printGroup(k,hs);await badge()}return page()}
+  if(a==='rm'){if(GH.includes(k))setGH(GH.filter(n=>n!==k));await pDel(k);await badge();return page()}
   if(a==='lq'){if(confirm('Apagar todas as fotos guardadas neste computador?')){for(const p of await pAll())await pDel(p.name);page()}return}
   if(a==='zr'||a==='za'){if(!S.gid||(a==='za'&&!confirm('Liberar a cota de todos os convidados?')))return;const g=await gGet(),d={};Object.keys(g.files).filter(n=>a==='za'?n.startsWith('c-'):n.startsWith('c-'+k+'-')).forEach(n=>d[n]=null);if(Object.keys(d).length)await gSet(d);return tick()}
   if(a==='qp'){if(!S.gid)return;return printImg(qrCard().toDataURL('image/png'),'qr')}
@@ -1610,10 +1620,10 @@ async function tick(){
     /* os outros eventos são consultados em rodízio (cada um a cada ~12 s) para não estourar o limite do GitHub */
     if(ot.length){const e=ot[ER++%ot.length];if(Date.now()-(EP[e.gid]||0)>12000){EP[e.gid]=Date.now();try{nw.push(...await pollEv(e.gid,0));e.err=0}catch(er){e.err=1}}}
     if(nw.length)notify(nw);
-    if(AUTO){const pq=(await pAll()).filter(p=>p.status==='pending').sort((a,b)=>a.ts-b.ts),po=pairOn();
-      for(const p of pq.filter(p=>!po||p.fmt!=='strip')){printImg(p.img,p.fmt);p.status='printed';await pPut(p);await sleep(3000)}
-      if(po){const left=await printStripsPaired(await stripQueue(pq.filter(p=>p.fmt==='strip')),0),w=+PR.stWait;
-        if(left&&w>0&&Date.now()-(left.rx||left.ts)>w*60000)await printStripGroup([left])}}
+    if(AUTO){const pq=(await pAll()).filter(p=>p.status==='pending').sort((a,b)=>a.ts-b.ts),po=grpOn(),w=+PR.gW;
+      for(const p of pq.filter(p=>!po)){printImg(p.img,p.fmt);p.status='printed';await pPut(p);await sleep(3000)}
+      if(po)for(const kd of FK){const left=await printGrouped(kd,await grpList(kd,pq),0),old=left.filter(p=>p.status==='pending').map(p=>p.rx||p.ts);
+        if(old.length&&w>0&&Date.now()-Math.min(...old)>w*60000)await printGroup(kd,left)}}
     await badge();const y=$('#sy');if(y){y.className='ok';y.innerHTML='<i class=dot></i>Conectado · '+new Date().toLocaleTimeString('pt-BR')}
     if(['home','queue','guests'].includes(tab))page()}
   catch(e){const y=$('#sy');if(y){y.className='err';y.innerHTML='<i class="dot e"></i>Sem conexão com o Gist'}}
