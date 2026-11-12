@@ -1116,7 +1116,7 @@ async function admin(){
   app.className='wide';AUTO=(await kvGet('auto'))===true;
   if(S.gid)try{await loadCfg()}catch(e){}
   EVS=(await kvGet('evs'))||[];if(S.gid)await evUpsert(S.gid,cfg.event);
-  const sp=await kvGet('pr');PR={...PRD,...(sp||(cfg.dup?{stN:2,stP:'10x15'}:{}))};
+  SH=(await kvGet('sh'))||null;const sp=await kvGet('pr');PR={...PRD,...(sp||(cfg.dup?{stN:2,stP:'10x15'}:{}))};
   if(sp&&(sp.v||0)<2){PR.v=2;PR.stW=5;PR.stP='5x15';kvSet('pr',PR)}
   F34={...F34,...((await kvGet('f34'))||{})};
   
@@ -1215,8 +1215,11 @@ function printSheet(src){const f=document.createElement('iframe');f.style.cssTex
   d.write('<!doctype html><meta charset=utf-8><style>@page{margin:0;size:'+SPW+'cm '+SPH+'cm}html,body{margin:0}body{width:'+SPW+'cm;height:'+(SPH-.2)+'cm;overflow:hidden;display:flex;align-items:center;justify-content:center}img{display:block;max-width:'+SPW+'cm;max-height:'+(SPH-.2)+'cm}</style><img src="'+src+'">');d.close();
   const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
+let SH=null;const setSH=v=>{SH=v;kvSet('sh',v)};
+/* tirinhas para juntar: a separada (mesmo já impressa, para reimpressão) vem primeiro, depois as pendentes */
+async function stripQueue(pend){const h=SH?await pGet(SH):null;if(SH&&!h)setSH(null);return h&&h.status!=='pending'?[h,...pend.filter(p=>p.name!==h.name)]:pend}
 const pendStrips=()=>pAll().then(a=>a.filter(p=>p.status==='pending'&&p.fmt==='strip').sort((x,y)=>x.ts-y.ts));
-async function printStripGroup(g){printSheet((await stripSheet(g.map(p=>p.img))).toDataURL('image/jpeg',.95));for(const p of g){p.status='printed';await pPut(p)}}
+async function printStripGroup(g){if(g.some(p=>p.name===SH))setSH(null);printSheet((await stripSheet(g.map(p=>p.img))).toDataURL('image/jpeg',.95));for(const p of g){p.status='printed';await pPut(p)}}
 /* imprime as tirinhas em grupos; a que sobrar sozinha só sai se solo=true */
 async function printStripsPaired(list,solo){const G=pairG();let left=null;
   for(let i=0;i<list.length;i+=G){const g=list.slice(i,i+G);if(g.length<2&&!solo){left=g[0];break}await printStripGroup(g);await sleep(3000)}
@@ -1332,8 +1335,8 @@ async function geocode(){if(GEOB)return;GEOB=1;
   GEOB=0}
 async function queue(){
   const all=(await pAll()).sort((a,b)=>b.ts-a.ts),ps=all.filter(qf),pe=ps.filter(p=>p.status==='pending'),pr=ps.filter(p=>p.status!=='pending');
-  const card=p=>`<div class="qi ${p.status==='pending'?'pend':''}"><img src="${p.img}"><b>${esc(nm(p.guest))}</b><span class=m>${esc(fN(p.fmt))}</span>${EVS.length>1?`<span class=evt>${esc(p.evn||evName(p.ev)||cfg.event)}</span>`:''}${metaHtml(p)}<div class=qb>${p.status==='pending'?`<button class=pri data-a=pr data-k="${esc(p.name)}">${ico('print')}Imprimir</button><button class=btn-del data-a=rm data-k="${esc(p.name)}">${ico('x')}Recusar</button><button class=ic title="Baixar com moldura" aria-label="Baixar" data-a=dl data-k="${esc(p.name)}">${ico('download')}</button>`:`<button data-a=pr data-k="${esc(p.name)}">${ico('print')}Reimprimir</button><button data-a=dl data-k="${esc(p.name)}">${ico('download')}Baixar</button><button class="ic btn-del" title="Remover" aria-label="Remover" data-a=rm data-k="${esc(p.name)}">${ico('trash')}</button>`}</div></div>`;
-  return `${EVS.length>1?`<div class="chips qev">${[['all','Todos os eventos'],...EVS.map(e=>[e.gid,e.name])].map(([k,n])=>{const c=all.filter(p=>p.status==='pending'&&(k==='all'||(p.ev||S.gid)===k)).length;return `<button class="chip ${QE===k?'on':''}" data-a=qe data-k="${k}">${esc(n)}${c?' · '+c:''}</button>`}).join('')}</div>`:''}<div class=card><div class=ph><h2>Aguardando liberação <small class=m>${pe.length}</small></h2><span><button class=pri data-a=pk ${pe.length?'':'disabled'} title="Junta fotos de convidados diferentes na mesma folha">${ico('layout')}Agrupar em folhas${pe.length?' ('+pe.length+' foto(s) → '+packN(pe)+' folha(s))':''}</button><button data-a=pa ${pe.length?'':'disabled'}>${ico('print')}Imprimir uma por vez</button><button data-a=dla ${ps.length?'':'disabled'} title="Baixa todas as fotos deste computador, com moldura">${ico('download')}Baixar todas (${ps.length})</button></span></div>${pairOn()?`<p class=m style="font-size:13px;margin:0 0 10px">${ico('film')} Tirinhas saem juntas, ${pairG()} por folha.${pe.filter(p=>p.fmt==='strip').length%pairG()?' Uma tirinha está esperando a próxima para completar a folha.':''}</p>`:''}<div class=qg>${pe.map(card).join('')||'<p class=m>Nenhuma foto aguardando.</p>'}</div></div>
+  const card=p=>`<div class="qi ${p.status==='pending'?'pend':''}"><img src="${p.img}"><b>${esc(nm(p.guest))}</b><span class=m>${esc(fN(p.fmt))}</span>${p.name===SH&&pairOn()?`<span class=evt style="background:#7c3aed;color:#fff">Separada · esperando a 2ª tirinha</span>`:''}${EVS.length>1?`<span class=evt>${esc(p.evn||evName(p.ev)||cfg.event)}</span>`:''}${metaHtml(p)}<div class=qb>${p.status==='pending'?`<button class=pri data-a=pr data-k="${esc(p.name)}">${ico('print')}Imprimir</button><button class=btn-del data-a=rm data-k="${esc(p.name)}">${ico('x')}Recusar</button><button class=ic title="Baixar com moldura" aria-label="Baixar" data-a=dl data-k="${esc(p.name)}">${ico('download')}</button>`:`<button data-a=pr data-k="${esc(p.name)}">${ico('print')}Reimprimir</button><button data-a=dl data-k="${esc(p.name)}">${ico('download')}Baixar</button><button class="ic btn-del" title="Remover" aria-label="Remover" data-a=rm data-k="${esc(p.name)}">${ico('trash')}</button>`}</div></div>`;
+  return `${EVS.length>1?`<div class="chips qev">${[['all','Todos os eventos'],...EVS.map(e=>[e.gid,e.name])].map(([k,n])=>{const c=all.filter(p=>p.status==='pending'&&(k==='all'||(p.ev||S.gid)===k)).length;return `<button class="chip ${QE===k?'on':''}" data-a=qe data-k="${k}">${esc(n)}${c?' · '+c:''}</button>`}).join('')}</div>`:''}<div class=card><div class=ph><h2>Aguardando liberação <small class=m>${pe.length}</small></h2><span><button class=pri data-a=pk ${pe.length?'':'disabled'} title="Junta fotos de convidados diferentes na mesma folha">${ico('layout')}Agrupar em folhas${pe.length?' ('+pe.length+' foto(s) → '+packN(pe)+' folha(s))':''}</button><button data-a=pa ${pe.length?'':'disabled'}>${ico('print')}Imprimir uma por vez</button><button data-a=dla ${ps.length?'':'disabled'} title="Baixa todas as fotos deste computador, com moldura">${ico('download')}Baixar todas (${ps.length})</button></span></div>${pairOn()?`<p class=m style="font-size:13px;margin:0 0 10px">${ico('film')} Tirinhas saem juntas, 2 por folha 10×15. Clique em Imprimir em duas tirinhas (pendentes ou já impressas) e elas saem na mesma folha.</p>${SH&&all.some(p=>p.name===SH)?`<div class="card alert" style="margin:0 0 12px"><div class=al><span class=ai>${ico('film')}</span><div><b>Tirinha de ${esc(nm((all.find(p=>p.name===SH)||{}).guest||''))} separada</b><br><span class=m>Ela sai junto com a próxima tirinha que você mandar imprimir.</span></div></div><button data-a=hsolo>${ico('print')}Imprimir sozinha agora</button><button data-a=hx>${ico('x')}Desfazer</button></div>`:''}`:(ps.some(p=>p.fmt==='strip')?`<p class=m style="font-size:13px;margin:0 0 10px">${ico('film')} Para juntar 2 tirinhas numa folha 10×15, ative a opção em <button class=sm data-a=tab data-k=prn>Tamanhos de impressão</button></p>`:'')}<div class=qg>${pe.map(card).join('')||'<p class=m>Nenhuma foto aguardando.</p>'}</div></div>
   <div class=card><h2>Já impressas <small class=m>${pr.length}</small></h2><div class=qg>${pr.map(card).join('')||'<p class=m>Nada impresso ainda.</p>'}</div><p><button class=btn-del data-a=lq>${ico('trash')}Limpar fila deste computador</button></p></div>`}
 async function guests(){
   const c={};if(GG)Object.keys(GG.files).forEach(n=>{const m=n.match(/^c-([a-z0-9]+)-\d+\.txt$/);if(m)c[m[1]]=(c[m[1]]||0)+1});
@@ -1548,14 +1551,14 @@ async function act(e){
   if(a==='gq')return show('queue');
   if(a==='notif'){await Notification.requestPermission();return page()}
   if(a==='pa'){const pq=(await pAll()).filter(p=>p.status==='pending'&&qf(p)).sort((x,y)=>x.ts-y.ts),po=pairOn();
-    if(po)await printStripsPaired(pq.filter(p=>p.fmt==='strip'),1);
+    if(po)await printStripsPaired(await stripQueue(pq.filter(p=>p.fmt==='strip')),1);
     for(const p of pq.filter(p=>!po||p.fmt!=='strip')){printImg(p.img,p.fmt);p.status='printed';await pPut(p);await sleep(3000)}await badge();return page()}
   if(a==='auto'){AUTO=t.checked;return kvSet('auto',AUTO)}
   if(a==='stpair'){PR.stPair=t.checked;
     kvSet('pr',PR);return page()}
   if(a==='pk'){const ps=(await pAll()).filter(p=>p.status==='pending'&&qf(p)).sort((x,y)=>x.ts-y.ts);if(!ps.length)return;
     if(!confirm('Imprimir '+ps.length+' foto(s) agrupadas em '+packN(ps)+' folha(s)?\nAs fotos ocupam o papel configurado em Impressão (sem papel definido, usa A4).'))return;
-    if(pairOn())await printStripsPaired(ps.filter(p=>p.fmt==='strip'),1);
+    if(pairOn())await printStripsPaired(await stripQueue(ps.filter(p=>p.fmt==='strip')),1);
     for(const kd of FK){if(kd==='strip'&&pairOn())continue;const g=ps.filter(p=>p.fmt===kd);if(!g.length)continue;const L=lay(kd,1);
       if(!L.cap){alert('A foto '+fN(kd)+' não cabe no papel escolhido. Ajuste em Impressão.');continue}
       printGrid(L,g.map(p=>p.img));for(const p of g){p.status='printed';await pPut(p)}await sleep(3000)}
@@ -1564,11 +1567,16 @@ async function act(e){
   if(a==='dl'){const p=await pGet(k);if(p)saveImg(p.img,fname(p.guest,p.ts));return}
   if(a==='dla'){const ps=(await pAll()).sort((x,y)=>x.ts-y.ts);if(!ps.length||!confirm('Baixar '+ps.length+' foto(s) com moldura?\nSe o navegador perguntar, permita vários downloads.'))return;for(const p of ps){await saveImg(p.img,fname(p.guest,p.ts));await sleep(400)}return}
   if(a==='pr'){const p=await pGet(k);if(!p)return;
-    if(p.fmt==='strip'&&p.status==='pending'&&pairOn()){const o=(await pendStrips()).filter(x=>x.name!==p.name).slice(0,pairG()-1);
-      if(!o.length&&!confirm('Esta é a única tirinha aguardando.\n\nOK: imprimir sozinha agora (sobra espaço em branco na folha).\nCancelar: esperar a próxima tirinha para sair junto na mesma folha.'))return;
-      await printStripGroup([p,...o]);await badge();return page()}
+    if(p.fmt==='strip'&&pairOn()){
+      const h=SH&&SH!==p.name?await pGet(SH):null;
+      if(h){await printStripGroup([h,p]);await badge();return page()}
+      const o=p.status==='pending'?(await pendStrips()).filter(x=>x.name!==p.name):[];
+      if(o.length){await printStripGroup([p,o[0]]);await badge();return page()}
+      setSH(p.name);toast(`<span class=ti>${ico('film')}</span><div><b>Tirinha de ${esc(nm(p.guest))} separada</b><br><span class=m>Clique em Imprimir (ou Reimprimir) em outra tirinha e as duas saem juntas na mesma folha 10×15.</span></div>`);return page()}
     printImg(p.img,p.fmt);p.status='printed';await pPut(p);await badge();return page()}
-  if(a==='rm'){await pDel(k);await badge();return page()}
+  if(a==='hx'){setSH(null);return page()}
+  if(a==='hsolo'){const h=SH&&await pGet(SH);if(h){await printStripGroup([h]);await badge()}else setSH(null);return page()}
+  if(a==='rm'){if(k===SH)setSH(null);await pDel(k);await badge();return page()}
   if(a==='lq'){if(confirm('Apagar todas as fotos guardadas neste computador?')){for(const p of await pAll())await pDel(p.name);page()}return}
   if(a==='zr'||a==='za'){if(!S.gid||(a==='za'&&!confirm('Liberar a cota de todos os convidados?')))return;const g=await gGet(),d={};Object.keys(g.files).filter(n=>a==='za'?n.startsWith('c-'):n.startsWith('c-'+k+'-')).forEach(n=>d[n]=null);if(Object.keys(d).length)await gSet(d);return tick()}
   if(a==='qp'){if(!S.gid)return;return printImg(qrCard().toDataURL('image/png'),'qr')}
@@ -1604,7 +1612,7 @@ async function tick(){
     if(nw.length)notify(nw);
     if(AUTO){const pq=(await pAll()).filter(p=>p.status==='pending').sort((a,b)=>a.ts-b.ts),po=pairOn();
       for(const p of pq.filter(p=>!po||p.fmt!=='strip')){printImg(p.img,p.fmt);p.status='printed';await pPut(p);await sleep(3000)}
-      if(po){const left=await printStripsPaired(pq.filter(p=>p.fmt==='strip'),0),w=+PR.stWait;
+      if(po){const left=await printStripsPaired(await stripQueue(pq.filter(p=>p.fmt==='strip')),0),w=+PR.stWait;
         if(left&&w>0&&Date.now()-(left.rx||left.ts)>w*60000)await printStripGroup([left])}}
     await badge();const y=$('#sy');if(y){y.className='ok';y.innerHTML='<i class=dot></i>Conectado · '+new Date().toLocaleTimeString('pt-BR')}
     if(['home','queue','guests'].includes(tab))page()}
