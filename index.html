@@ -353,18 +353,34 @@ async function loadCfg(){const g=await gGet(),f=g.files;
    e o toque em Imprimir chama window.print() na própria página, com CSS só de impressão. */
 const IOS=/iP(ad|hone|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),PQ=[];
 function goPrint(f){if(!IOS){f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000);return}
-  const d=f.contentDocument,css=[...d.querySelectorAll('style')].map(s=>s.textContent).join('\n'),html=d.body.innerHTML,img=(d.querySelector('img')||{}).src||'';f.remove();PQ.push({css,html,img});iosPM();
-  const ua=navigator.userActivation;if(PQ.length===1&&ua&&ua.isActive){const p=document.getElementById('prt');Promise.all([...p.querySelectorAll('img')].map(i=>i.decode?i.decode().catch(()=>0):0)).then(()=>{if(PQ.length===1&&ua.isActive)iosGo()})}}
-function iosGo(){if(!PQ[0])return;let fired=0;const done=()=>{if(fired)return;fired=1;window.removeEventListener('afterprint',done);try{localStorage.setItem('cab_ipok',Date.now())}catch(e){}PQ.shift();iosPM();const c=document.getElementById('ipst');if(c)c.innerHTML=ipStatus()};
+  const d=f.contentDocument,css=[...d.querySelectorAll('style')].map(s=>s.textContent).join('\n'),html=d.body.innerHTML,img=(d.querySelector('img')||{}).src||'';f.remove();const job={css,html,img};PQ.push(job);iosPM();const ua=navigator.userActivation;
+  if(SA()){jobFiles(job).then(fs=>{job.ready=fs;if(PQ[0]===job){iosPM();if(PQ.length===1&&ua&&ua.isActive)iosGo()}}).catch(e=>{job.err=String(e&&e.message||e);if(PQ[0]===job)iosPM()});return}
+  if(PQ.length===1&&ua&&ua.isActive){const p=document.getElementById('prt');Promise.all([...p.querySelectorAll('img')].map(i=>i.decode?i.decode().catch(()=>0):0)).then(()=>{if(PQ.length===1&&ua.isActive)iosGo()})}}
+function iosGo(){if(!PQ[0])return;const j=PQ[0];
+  if(SA()){if(!j.ready)return;const fs=j.ready;if(!navigator.canShare||!navigator.canShare({files:fs})){j.err='Este iPad não permite compartilhar as fotos pelo app da tela inicial.';return iosPM()}
+    navigator.share({files:fs}).then(()=>{try{localStorage.setItem('cab_ipok',Date.now())}catch(e){}if(PQ[0]===j){PQ.shift();iosPM()}const c=document.getElementById('ipst');if(c)c.innerHTML=ipStatus()}).catch(e=>{if(e&&e.name!=='AbortError'){j.err=e.message;iosPM()}});return}
+  let fired=0;const done=()=>{if(fired)return;fired=1;window.removeEventListener('afterprint',done);try{localStorage.setItem('cab_ipok',Date.now())}catch(e){}PQ.shift();iosPM();const c=document.getElementById('ipst');if(c)c.innerHTML=ipStatus()};
   window.addEventListener('afterprint',done);window.print();setTimeout(()=>{const g=document.querySelector('[data-pp=go]');if(g&&!fired)g.lastChild.textContent='Imprimir de novo'},1500)}
 function ipStatus(){let t=0;try{t=+localStorage.getItem('cab_ipok')||0}catch(e){}return t?'<span class=ok>'+ico('checkc')+' Impressora já usada neste iPad · última impressão em '+new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span>':'<span class=err>'+ico('warn')+' Nenhuma impressora usada ainda neste iPad</span>'}
-const scopeCss=css=>css.replace(/(^|\})\s*([^{}@]+)\{/g,(m,b,sel)=>b+sel.split(',').map(t=>{t=t.trim();return t==='html'?'html':t==='body'?'#prt':'#prt '+t}).join(',')+'{');
+const scopeCss=(css,R='#prt')=>css.replace(/(^|\})\s*([^{}@]+)\{/g,(m,b,sel)=>b+sel.split(',').map(t=>{t=t.trim();return t==='html'?'html':t==='body'?R:R+' '+t}).join(',')+'{'),
+  /* aberto pelo ícone da tela inicial: o iOS desativa window.print(); a saída é o menu Compartilhar → Imprimir */
+  SA=()=>IOS&&(navigator.standalone===true||!!(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
+/* transforma o trabalho de impressão em arquivos de imagem (uma imagem por folha) para o menu Compartilhar */
+async function jobFiles(j){const u2f=async(u,n)=>{const b=await (await fetch(u)).blob();return new File([b],n,{type:b.type||'image/jpeg'})};
+  const box=document.createElement('div');box.id='prm';box.style.cssText='position:fixed;left:-20000px;top:0;visibility:hidden';const st=document.createElement('style');st.textContent=scopeCss(j.css.replace(/@page\{[^}]*\}/g,''),'#prm');
+  box.innerHTML=j.html;document.body.append(st,box);
+  try{const ims=[...box.querySelectorAll('img')];await Promise.all(ims.map(i=>i.decode?i.decode().catch(()=>0):0));const pgs=[...box.querySelectorAll('.pg')];
+    if(!pgs.length){const us=[...new Set(ims.map(i=>i.src))];return Promise.all(us.map((u,i)=>u2f(u,'foto-'+(i+1)+'.jpg')))}
+    const K=300/96,out=[];for(const[pi,pg]of pgs.entries()){const R=pg.getBoundingClientRect(),c=document.createElement('canvas');c.width=Math.round(R.width*K);c.height=Math.round((R.height+.2*37.8)*K);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+      pg.querySelectorAll('img').forEach(im=>{const r=im.getBoundingClientRect();x.drawImage(im,(r.left-R.left)*K,(r.top-R.top)*K,r.width*K,r.height*K)});
+      const b=await new Promise(r=>c.toBlob(r,'image/jpeg',.95));c.width=c.height=0;out.push(new File([b],'folha-'+(pi+1)+'.jpg',{type:'image/jpeg'}))}return out}
+  finally{st.remove();box.remove()}}
 function iosPM(){let m=document.getElementById('prtm');const j=PQ[0];if(!j){if(m)m.remove();const p=document.getElementById('prt');if(p)p.innerHTML='';return}
   let st=document.getElementById('prtS');if(!st){st=document.createElement('style');st.id='prtS';document.head.appendChild(st)}
   st.textContent='#prt{display:none}@media print{'+scopeCss(j.css)+'body>*:not(#prt){display:none!important}html,body,html body,html[data-th] body,body[data-th]{margin:0!important;padding:0!important;background:#fff!important;background-image:none!important;height:auto!important;min-height:0!important;overflow:visible!important}#prt{display:block!important}}';
   let p=document.getElementById('prt');if(!p){p=document.createElement('div');p.id='prt';document.body.appendChild(p)}p.innerHTML=j.html;
   if(!m){m=document.createElement('div');m.id='prtm';document.body.appendChild(m)}
-  m.innerHTML='<div class=prtc>'+(j.img?'<img src="'+j.img+'" alt="">':'')+'<p style="margin:12px 0 4px"><b>Pronto para imprimir</b>'+(PQ.length>1?' · 1 de '+PQ.length:'')+'</p><p class=m style="font-size:13px;margin:0 0 12px">No iPad/iPhone a impressão precisa de um toque. Na janela que abrir, escolha a impressora e o tamanho do papel.</p><div><button class=pri data-pp=go>'+ico('print')+'Imprimir</button>'+(PQ.length>1?'<button data-pp=skip>Pular</button>':'')+'<button data-pp=x>Fechar</button></div></div>'}
+  m.innerHTML='<div class=prtc>'+(j.img?'<img src="'+j.img+'" alt="">':'')+'<p style="margin:12px 0 4px"><b>Pronto para imprimir</b>'+(PQ.length>1?' · 1 de '+PQ.length:'')+'</p>'+(SA()?'<p class=m style="font-size:13px;margin:0 0 12px">Toque em <b>Imprimir</b> e, no menu que abrir, escolha <b>Imprimir</b> (role a lista para baixo se precisar). O iPad lembra a última impressora.</p>'+(j.err?'<p class=err style="font-size:13px">'+esc(j.err)+' Abra o app pelo Safari para imprimir: <a href="'+esc(location.href)+'" target=_blank rel=noopener>abrir no Safari</a>.</p>':''):'<p class=m style="font-size:13px;margin:0 0 12px">No iPad/iPhone a impressão precisa de um toque. Na janela que abrir, escolha a impressora e o tamanho do papel.</p>')+'<div><button class=pri data-pp=go '+(SA()&&!j.ready?'disabled':'')+'>'+ico('print')+(SA()&&!j.ready&&!j.err?'Preparando…':'Imprimir')+'</button>'+(PQ.length>1?'<button data-pp=skip>Pular</button>':'')+'<button data-pp=x>Fechar</button></div></div>'}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-pp]');if(!b)return;e.preventDefault();e.stopPropagation();const v=b.dataset.pp;
   if(v==='go')return iosGo();
   if(v==='skip'){PQ.shift();return iosPM()}if(v==='x'){PQ.length=0;return iosPM()}},true);
@@ -1668,6 +1684,7 @@ async function prn(){
   <p class=m style="font-size:13px;margin:0">Cada modelo só é agrupado com fotos do mesmo modelo. Veja abaixo como fica a folha de cada um.</p>`:''}</div>`;
   const ipcard=IOS?`<div class=card><h2>${ico('print')} Impressora do iPad</h2><p id=ipst style="margin:-4px 0 10px;font-size:13.5px">${ipStatus()}</p>
   <ol class=m style="font-size:13.5px;margin:0 0 10px;padding-left:20px;line-height:1.55"><li>Ligue a impressora e deixe-a no <b>mesmo Wi-Fi</b> do iPad.</li><li>Toque em <b>Conectar / trocar impressora</b>. Na janela que abrir, toque em <b>Impressora</b>: o iPad procura as impressoras da rede. Escolha a sua.</li><li>Escolha o papel e toque em <b>Imprimir</b>. Sai uma folha de teste.</li></ol>
+  ${SA()?'<p style="font-size:13.5px;margin:0 0 10px;padding:10px;border-radius:10px;background:var(--c2)">Você abriu o app pelo <b>ícone da tela inicial</b>. Nesse modo o iPad não abre a impressão direto: ao tocar em Imprimir, aparece o <b>menu Compartilhar</b>. Nele, escolha <b>Imprimir</b> e siga os passos acima.</p>':''}
   <p class=m style="font-size:13.5px;margin:0 0 10px">Pronto: o iPad guarda essa impressora. Nas próximas fotos ela já vem selecionada, é só confirmar em <b>Imprimir</b>. Para trocar, toque de novo no botão abaixo e escolha outra.</p>
   <button class=pri data-a=ipcon>${ico('print')}Conectar / trocar impressora</button>
   <p class=m style="font-size:12.5px;margin:10px 0 0">A impressora não aparece na lista? Confira se ela está ligada, no mesmo Wi-Fi e se é compatível com AirPrint (a maioria das impressoras recentes é).</p></div>`:'';
