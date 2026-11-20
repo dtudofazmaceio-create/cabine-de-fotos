@@ -29,7 +29,7 @@ h2{font-size:16px;font-weight:650;margin:0 0 14px}
 .ld{display:flex;align-items:center;justify-content:center;padding:48px 0}
 
 /* ============ COMPONENTES ============ */
-.card{background:var(--c);border:1px solid var(--b);border-radius:16px;padding:20px;margin:0 0 16px;box-shadow:var(--sh)}
+#prtm{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px}#prtm .prtc{background:var(--c);color:var(--fg);border:1px solid var(--b);border-radius:18px;padding:18px;width:100%;max-width:440px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}#prtm img{max-width:100%;max-height:48vh;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.25)}#prtm button{min-height:44px}.card{background:var(--c);border:1px solid var(--b);border-radius:16px;padding:20px;margin:0 0 16px;box-shadow:var(--sh)}
 label{display:block;font-size:13px;font-weight:550;color:var(--m);margin:10px 0}
 label output{float:right;color:var(--fg)}
 input:not([type=checkbox]):not([type=color]):not([type=range]):not([type=hidden]),select{display:block;width:100%;padding:11px 13px;margin-top:5px;border:1px solid var(--b);border-radius:11px;background:var(--c2);color:var(--fg);font:inherit;font-size:15px;transition:border-color .15s,box-shadow .15s}
@@ -347,13 +347,31 @@ async function loadCfg(){const g=await gGet(),f=g.files;
   BGG=null;if(cfg.bgG&&f['bg.txt'])try{BGG=JSON.parse(await txt(f['bg.txt']))}catch(e){}
   return g}
 
+/* ---------- impressão no iPhone/iPad ----------
+   O Safari do iOS/iPadOS não imprime o conteúdo de um iframe oculto e só abre a janela do AirPrint
+   logo após um toque. Por isso, nesses aparelhos, cada impressão vira um aviso "Pronto para imprimir"
+   e o toque em Imprimir chama window.print() na própria página, com CSS só de impressão. */
+const IOS=/iP(ad|hone|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),PQ=[];
+function goPrint(f){if(!IOS){f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000);return}
+  const d=f.contentDocument,css=[...d.querySelectorAll('style')].map(s=>s.textContent).join('\n'),html=d.body.innerHTML,img=(d.querySelector('img')||{}).src||'';f.remove();PQ.push({css,html,img});iosPM()}
+const scopeCss=css=>css.replace(/(^|\})\s*([^{}@]+)\{/g,(m,b,sel)=>b+sel.split(',').map(t=>{t=t.trim();return t==='html'?'html':t==='body'?'#prt':'#prt '+t}).join(',')+'{');
+function iosPM(){let m=document.getElementById('prtm');const j=PQ[0];if(!j){if(m)m.remove();const p=document.getElementById('prt');if(p)p.innerHTML='';return}
+  let st=document.getElementById('prtS');if(!st){st=document.createElement('style');st.id='prtS';document.head.appendChild(st)}
+  st.textContent='#prt{display:none}@media print{'+scopeCss(j.css)+'body>*:not(#prt){display:none!important}html,body,html body,html[data-th] body,body[data-th]{margin:0!important;padding:0!important;background:#fff!important;background-image:none!important;height:auto!important;min-height:0!important;overflow:visible!important}#prt{display:block!important}}';
+  let p=document.getElementById('prt');if(!p){p=document.createElement('div');p.id='prt';document.body.appendChild(p)}p.innerHTML=j.html;
+  if(!m){m=document.createElement('div');m.id='prtm';document.body.appendChild(m)}
+  m.innerHTML='<div class=prtc>'+(j.img?'<img src="'+j.img+'" alt="">':'')+'<p style="margin:12px 0 4px"><b>Pronto para imprimir</b>'+(PQ.length>1?' · 1 de '+PQ.length:'')+'</p><p class=m style="font-size:13px;margin:0 0 12px">No iPad/iPhone a impressão precisa de um toque. Na janela que abrir, escolha a impressora e o tamanho do papel.</p><div><button class=pri data-pp=go>'+ico('print')+'Imprimir</button>'+(PQ.length>1?'<button data-pp=skip>Pular</button>':'')+'<button data-pp=x>Fechar</button></div></div>'}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-pp]');if(!b)return;e.preventDefault();e.stopPropagation();const v=b.dataset.pp;
+  if(v==='go'){if(!PQ[0])return;let fired=0;const done=()=>{if(fired)return;fired=1;window.removeEventListener('afterprint',done);PQ.shift();iosPM()};window.addEventListener('afterprint',done);window.print();setTimeout(()=>{const g=document.querySelector('[data-pp=go]');if(g&&!fired)g.lastChild.textContent='Imprimir de novo'},1500);return}
+  if(v==='skip'){PQ.shift();return iosPM()}if(v==='x'){PQ.length=0;return iosPM()}},true);
+
 /* ---------- utilitários ---------- */
 function gridCss(L){const gh=L.rows*L.h,top=Math.max(0,(L.pg[1]-gh)/2);
   return '@page{margin:0;size:'+L.pg[0]+'cm '+L.pg[1]+'cm}html,body{margin:0}.pg{width:'+L.pg[0]+'cm;height:'+(L.pg[1]-.2)+'cm;padding-top:'+top+'cm;box-sizing:border-box;overflow:hidden;display:grid;grid-template-columns:repeat('+L.cols+','+L.w+'cm);grid-auto-rows:'+L.h+'cm;justify-content:center;align-content:start}.pg+.pg{break-before:page;page-break-before:always}img{display:block;width:'+L.w+'cm;height:'+L.h+'cm;outline:.1mm solid #999}'}
 function printGrid(L,srcs){const cap=Math.max(1,L.cols*L.rows),f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);
   const d=f.contentDocument;d.open();d.write('<!doctype html><meta charset=utf-8><style>'+gridCss(L)+'</style><body></body>');d.close();
   for(let i=0;i<srcs.length;i+=cap){const pg=d.createElement('div');pg.className='pg';srcs.slice(i,i+cap).forEach(u=>{const im=d.createElement('img');im.src=u;pg.appendChild(im)});d.body.appendChild(pg)}
-  const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
+  const go=()=>goPrint(f);
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
 function printImg(src,kind){
   if(FMT[kind]){const L=lay(kind);if(L.pg)return printGrid(L,Array(L.n).fill(src))}
@@ -361,7 +379,7 @@ function printImg(src,kind){
   let css='@page{margin:0}body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center}img{max-width:100%;max-height:100vh}',n=1;
   if(FMT[kind]){const L=lay(kind);n=L.n;css='@page{margin:0}html,body{margin:0}body{height:100vh;display:flex;align-items:center;justify-content:center}img{flex:none;display:block;width:'+L.w+'cm;height:'+L.h+'cm}'}
   d.write('<style>'+css+'</style>'+('<img src="'+src+'">').repeat(n));d.close();
-  const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
+  const go=()=>goPrint(f);
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
 const slug=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'foto',
 fname=(g,ts)=>'foto-'+slug(cfg.event)+'-'+slug(g)+'-'+ts+'.jpg';
@@ -1612,7 +1630,7 @@ async function grpSheet(k,srcs){const G=grpGeo(k),PX=118.11,c=document.createEle
   return c}
 function printSheet(src,pw,ph){const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);const d=f.contentDocument;d.open();
   d.write('<!doctype html><meta charset=utf-8><style>@page{margin:0;size:'+pw+'cm '+ph+'cm}html,body{margin:0}body{width:'+pw+'cm;height:'+(ph-.2)+'cm;overflow:hidden;display:flex;align-items:center;justify-content:center}img{display:block;max-width:'+pw+'cm;max-height:'+(ph-.2)+'cm}</style><img src="'+src+'">');d.close();
-  const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
+  const go=()=>goPrint(f);
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
 /* fotos "separadas": esperam completar a folha (podem ser pendentes ou já impressas, para reimpressão) */
 let GH=[];const setGH=v=>{GH=v;kvSet('gh',v)};
@@ -1645,7 +1663,7 @@ async function prn(){
   <label class=ck><input type=checkbox data-a=gcut ${PR.gC?'checked':''}> Linha tracejada de corte em volta de cada foto</label>
   <p class=m style="font-size:13px;margin:0">Cada modelo só é agrupado com fotos do mesmo modelo. Veja abaixo como fica a folha de cada um.</p>`:''}</div>`;
   return `${gcard}<div class=g2c>${FK.map(blk).join('')}</div>
-  <div class=card><h2>Liberação e testes</h2><label class=ck><input type=checkbox data-a=auto ${AUTO?'checked':''}> Imprimir automaticamente, sem aprovação (desligado: você decide cada foto)</label>
+  <div class=card><h2>Liberação e testes</h2><label class=ck><input type=checkbox data-a=auto ${AUTO?'checked':''}> Imprimir automaticamente, sem aprovação (desligado: você decide cada foto)</label>${IOS?'<p class=m style="font-size:12.5px;margin:-4px 0 10px">No iPad/iPhone, o sistema exige um toque para cada impressão: as fotos chegam e aparecem uma a uma em “Pronto para imprimir”. Para imprimir sem nenhum toque, use um computador com o Chrome.</p>':''}
   <p class=m style="font-size:13px">Estes ajustes valem para este computador e já são aplicados na hora. Na janela de impressão do navegador, deixe a escala em 100% e as margens em “Nenhuma”.</p>
   ${FK.map(k=>`<button data-a=ptest data-k=${k}>${ico(FMT[k].ic)}Imprimir teste · ${FMT[k].n.toLowerCase()}</button>`).join('')}</div>`}
 const packN=ps=>FK.reduce((t,k)=>{const n=ps.filter(p=>p.fmt===k).length;return t+(n?Math.ceil(n/Math.max(1,grpOn()?grpN():lay(k,1).cap)):0)},0);
@@ -1701,7 +1719,7 @@ function print34(){
   d.close();
   let left=F34.qty;
   for(let p=0;p<L.pages;p++){const pg=d.createElement('div');pg.className='pg';for(let i=0,n=Math.min(L.per,left);i<n;i++){const im=d.createElement('img');im.src=url;pg.appendChild(im)}left-=L.per;d.body.appendChild(pg)}
-  const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
+  const go=()=>goPrint(f);
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
 /* ---------- plano de fundo do sistema ---------- */
 let BG={img:null,op:40,z:100,x:50,y:50},BGG=null,delFr={};
@@ -1930,7 +1948,7 @@ function qrPdf(){const sc=qrSheet(300),[,wc,hc]=QPAP[QPP],bl=pdfJpeg(sc.toDataUR
   document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(a.href)},1500)}
 function qrPrint(){const sc=qrSheet(300),[,wc,hc]=QPAP[QPP],f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);
   const d=f.contentDocument;d.open();d.write('<!doctype html><meta charset=utf-8><style>@page{margin:0;size:'+wc+'cm '+hc+'cm}html,body{margin:0}div{width:'+wc+'cm;height:'+(hc-.2)+'cm;overflow:hidden}img{display:block;width:'+wc+'cm;height:'+hc+'cm}</style><div><img src="'+sc.toDataURL('image/jpeg',.95)+'"></div>');d.close();
-  const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000)};
+  const go=()=>goPrint(f);
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
 
 async function act(e){
