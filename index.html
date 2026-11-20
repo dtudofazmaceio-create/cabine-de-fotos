@@ -44,7 +44,7 @@ input[type=file]::file-selector-button{margin-right:12px;border:0;border-radius:
 button{font:inherit;font-size:14px;font-weight:550;line-height:1.2;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 15px;border-radius:11px;border:1px solid var(--b);background:var(--btn);color:var(--fg);cursor:pointer;margin:4px 6px 4px 0;transition:border-color .15s,filter .15s,transform .15s,background-color .15s}
 button:hover{border-color:var(--ac)}
 button:active{transform:translateY(1px)}
-button.pri{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;border-color:transparent;box-shadow:0 6px 18px var(--glow)}
+button.pri{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;border-color:transparent;box-shadow:0 6px 18px var(--glow)}a.tkb{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border-radius:11px;font-size:14px;font-weight:600;text-decoration:none;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;box-shadow:0 6px 18px var(--glow)}.tkh{border:1px dashed var(--b);border-radius:12px;padding:12px;margin:0 0 12px}
 button.pri:hover{filter:brightness(1.08)}
 button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
 button.sm{padding:6px 11px;font-size:13px;margin:0}
@@ -597,7 +597,7 @@ function doodle(x,k,cx,cy,s,col,rot=0,lw){x.save();x.translate(cx,cy);x.rotate(r
   else if(k==='loop'){for(let t=0;t<=1;t+=.02)x.lineTo(-s+t*2*s+Math.cos(t*TAU*3)*s*.25,Math.sin(t*TAU*3)*s*.3)}
   x.stroke();x.restore()}
 const CHALK='"Comic Sans MS","Chalkboard SE","Comic Neue","Trebuchet MS",sans-serif';
-function crescent(x,cx,cy,r,col){const t=document.createElement('canvas'),S=Math.ceil(r*3);t.width=t.height=S;const q=t.getContext('2d');circ(q,S/2,S/2,r,col);q.globalCompositeOperation='destination-out';circ(q,S/2+r*.42,S/2-r*.28,r*.84,'#000');x.save();x.shadowColor=col;x.shadowBlur=r*.6;x.drawImage(t,cx-S/2,cy-S/2);x.restore()}
+function crescent(x,cx,cy,r,col){const t=document.createElement('canvas'),S=Math.ceil(r*3);t.width=t.height=S;const q=t.getContext('2d');circ(q,S/2,S/2,r,col);q.globalCompositeOperation='destination-out';circ(q,S/2+r*.42,S/2-r*.28,r*.84,'#000');x.save();x.shadowColor=col;x.shadowBlur=r*.6;x.drawImage(t,cx-S/2,cy-S/2);x.restore();t.width=t.height=0}
 function scrawl(x,t,px,py,sz,col,rot=0,f=CHALK){x.save();x.translate(px,py);x.rotate(rot);x.font='700 '+sz+'px '+f;x.textAlign='center';x.textBaseline='middle';x.fillStyle=col;x.fillText(t,0,0);x.restore()}
 function postit(x,cx,cy,s,col,rot,t){x.save();x.translate(cx,cy);x.rotate(rot);x.shadowColor='rgba(0,0,0,.25)';x.shadowBlur=s*.12;x.shadowOffsetY=s*.05;x.fillStyle=col;x.fillRect(-s/2,-s/2,s,s);x.shadowColor='transparent';
   x.fillStyle=al('#ffffff',.55);x.fillRect(-s*.2,-s*.6,s*.4,s*.16);scrawl(x,t,0,s*.05,s*.2,'#1f2937',0);x.restore()}
@@ -1296,6 +1296,12 @@ LYF.xv15=function(x,W,H,N,s,c){const S=Math.min(W/1200,H/1800),acc=c.acc||'#c9a2
     x.save();x.translate(x0,0);x.scale(kk,1);x.font='italic 500 '+40*S+'px '+CG;x.fillStyle=agrad(x,mx(acc,-.25),0,dy-40*S,wa,dy);spaced(x,d1,wa/2,dy,4*S);x.font='700 '+42*S+'px '+CZ;x.fillStyle=tc2;spaced(x,tg,wa+wb/2,dy,3*S);x.restore()}};
 const lgOf=(f,c=cfg)=>({...DEF.lg,...(c.lg||{}),...(((c.lgf||{})[f])||{})});
 function drawLogo(x,W,H,f,c){const L=FR.logo;if(!L||!c.lgOn||c.nolg)return;const p=lgOf(f,c),w=W*p.w/100,h=w*L.height/L.width;x.save();x.globalAlpha=(p.o==null?100:p.o)/100;x.drawImage(L,W*p.x/100-w/2,H*p.y/100-h/2,w,h);x.restore()}
+/* compatibilidade: iPhone/iPad com iOS 15 ou anterior não têm ctx.roundRect */
+if(window.CanvasRenderingContext2D&&!CanvasRenderingContext2D.prototype.roundRect)CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){let a=Array.isArray(r)?r:[r==null?0:r];a=a.map(v=>v&&typeof v==='object'?(+v.x||0):(+v||0));
+  const q=a.length===1?[a[0],a[0],a[0],a[0]]:a.length===2?[a[0],a[1],a[0],a[1]]:a.length===3?[a[0],a[1],a[2],a[1]]:a;if(w<0){x+=w;w=-w}if(h<0){y+=h;h=-h}
+  const m=Math.min(w,h)/2,[A,B,C,D]=q.map(v=>Math.max(0,Math.min(v,m)));this.moveTo(x+A,y);this.lineTo(x+w-B,y);this.arcTo(x+w,y,x+w,y+B,B);this.lineTo(x+w,y+h-C);this.arcTo(x+w,y+h,x+w-C,y+h,C);this.lineTo(x+D,y+h);this.arcTo(x,y+h,x,y+h-D,D);this.lineTo(x,y+A);this.arcTo(x,y,x+A,y,A);this.closePath()};
+/* iOS/iPadOS limitam a memória total de canvas (~384 MB): zerar o canvas após usar libera na hora */
+function cvURL(cv,t='image/jpeg',q=.9){const u=cv.toDataURL(t,q);cv.width=cv.height=0;return u}
 function compose(f,s,c=cfg){const F=FMT[f]||FMT.pola,W=F.W,H=F.H,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
   const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,c.color);g.addColorStop(1,c.c2||c.color);x.fillStyle=g;x.fillRect(0,0,W,H);
   if(FR.bg&&c.bo>0)drawBg(x,W,H,c);deco(x,W,H,c);
@@ -1388,7 +1394,7 @@ async function shoot(){
     const w=i?Math.max(3,+cfg.si||6):3;
     for(let c=w;c>0;c--){$('#ms').textContent=N<2?'Sorria!':i&&c>3?`Mude de pose! Prepare a pose ${i+1} de ${N}…`:`Pose ${i+1} de ${N}: sorria!`;cdn(c);await sleep(1000)}
     $('#cd').textContent='';await flashOn();shots.push(snap());await flashOff();if(!i)shotAt=Date.now();$('#fl').style.opacity=1;setTimeout(()=>$('#fl').style.opacity=0,150);await sleep(1100)}
-  stopCam();const img=compose(fmt,shots).toDataURL('image/jpeg',.88);cfg.confirm?preview(img):result(img)}
+  stopCam();const img=cvURL(compose(fmt,shots),'image/jpeg',.88);cfg.confirm?preview(img):result(img)}
 function preview(img){
   app.innerHTML=`<header class=hero><h1>Gostou?</h1><p class=m>Confira como ficou antes de enviar.</p></header><img class=res src="${img}"><div class=fm><button class=pri id=ok>${ico('print')}Solicitar impressão</button><button id=rf>${ico('reset')}Refazer</button></div>`;
   $('#ok').onclick=()=>result(img);
@@ -1527,7 +1533,7 @@ async function page(){const P={home,events,design,rules,prn,f34:f34tab,queue,gue
 
 async function home(){
   const ps=await pAll(),pen=ps.filter(p=>p.status==='pending').length,ks=GG?Object.keys(GG.files).filter(k=>k.startsWith('c-')):[],gs=new Set(ks.map(k=>k.split('-')[1])).size,tp=allT().find(t=>t.id===cfg.tpl),key=JSON.stringify(cfg)+!!FR.pola+!!FR.bg+!!FR.logo+pvv;
-  if(key!==HK){HK=key;HP=compose('pola',[getDM()]).toDataURL('image/jpeg',.6)}
+  if(key!==HK){HK=key;HP=cvURL(compose('pola',[getDM()]),'image/jpeg',.6)}
   const ok=(b,t,w)=>`<li><i class="dot ${b?'':'w'}"></i>${b?t:w}</li>`;
   return `${pen?`<div class='card alert'><div class=al><span class=ai>${ico('bell')}</span><div><b>${pen} foto(s) aguardando liberação</b><br><span class=m>Revise e escolha quais imprimir.</span></div></div><button class=pri data-a=gq>${ico('print')}Revisar e imprimir</button></div>`:''}<div class=stats>${[['Aguardando',pen,'clock','#f59e0b'],['Impressas',ps.length-pen,'print','#10b981'],['Fotos tiradas',ks.length,'camera','#6366f1'],['Convidados',gs,'users','#ec4899']].map(([a,b,c,d])=>`<div class="card st"><i style="background:${d}22;color:${d}">${ico(c)}</i><div><b>${b}</b><small class=m>${a}</small></div></div>`).join('')}</div>
   <div class=g21><div class=card><h2>Últimas fotos</h2><div class=thumbs>${ps.sort((a,b)=>b.ts-a.ts).slice(0,12).map(p=>`<img src="${p.img}" title="${esc(nm(p.guest))} · ${new Date(p.at||p.ts).toLocaleString('pt-BR')}${p.addr?' · '+esc(p.addr):''}">`).join('')||'<p class=m>Nenhuma foto ainda.</p>'}</div></div>
@@ -1765,7 +1771,9 @@ async function importBackup(file){
     await admin()
   }catch(e){say('Falha ao restaurar: '+e.message,'err')}}
 async function conn(){
-  return `<div class=grid2><div class=card><h2>Sincronização (GitHub Gist)</h2><label>Token do GitHub (classic, permissão gist)<input id=tk type=password value="${esc(S.tok||'')}"></label><label>ID do Gist<input id=gi value="${esc(S.gid||'')}" placeholder="vazio = criar um novo"></label><button class=pri data-a=ss>${ico('cloud')}Salvar / criar Gist</button><p id=cm class=m></p></div>
+  return `<div class=grid2><div class=card><h2>Sincronização (GitHub Gist)</h2><div class=tkh><p style="margin:0 0 6px"><b>Ainda não tem token?</b></p><a class="tkb pri" href="https://github.com/settings/tokens/new?scopes=gist&description=${encodeURIComponent('Cabine de Fotos '+new Date().toLocaleDateString('pt-BR'))}" target=_blank rel=noopener>${ico('cloud')}Criar token no GitHub</a>
+  <ol class=m style="font-size:13px;margin:8px 0 4px;padding-left:20px;line-height:1.5"><li>Entre na sua conta do GitHub. A página já abre com o nome e a permissão <b>gist</b> marcada.</li><li>Em <b>Expiration</b>, escolha uma data depois do evento (ou <b>No expiration</b>).</li><li>Toque em <b>Generate token</b>, no fim da página, e copie o código <code>ghp_…</code>. Ele só aparece uma vez.</li><li>Volte aqui, cole no campo abaixo e toque em <b>Testar token</b>.</li></ol></div>
+  <label>Token do GitHub (classic, permissão gist)<input id=tk type=password autocomplete=off autocapitalize=off spellcheck=false value="${esc(S.tok||'')}"></label><div><button class=sm data-a=tkp>Colar</button><button class=sm data-a=tkv>Mostrar</button><button class=sm data-a=tkt>${ico('check')}Testar token</button></div><p id=tkm class=m style="font-size:13px;margin:4px 0 8px"></p><label>ID do Gist<input id=gi value="${esc(S.gid||'')}" placeholder="vazio = criar um novo"></label><button class=pri data-a=ss>${ico('cloud')}Salvar / criar Gist</button><p id=cm class=m></p></div>
   <div class=card><h2>Backup global</h2><p class=m style="font-size:13px;margin:-6px 0 0">Guarda token e ID do Gist, modelo, textos, molduras PNG, fundo, impressão e 3x4 em um único arquivo. Para usar em outra máquina: abra #admin, vá em Conexão e restaure o arquivo.</p>
   <label class=ck><input type=checkbox id=bkp> Incluir fotos da fila/arquivo deste computador</label>
   <button class=pri data-a=bkx>${ico('download')}Baixar backup</button>
@@ -1777,10 +1785,18 @@ async function conn(){
 const mkqr=()=>{const q=$('#qr');if(!q)return;q.innerHTML='';if(S.gid&&window.QRCode)new QRCode(q,{text:$('#lk').value.trim()+'#g='+S.gid+'.'+S.tok,width:240,height:240,correctLevel:QRCode.CorrectLevel.L});q6prev()};
 let DM,PVC=null;const defDM=()=>{if(!DM){DM=document.createElement('canvas');DM.width=800;DM.height=600;const x=DM.getContext('2d'),g=x.createLinearGradient(0,0,800,600);g.addColorStop(0,'#fbcfe8');g.addColorStop(1,'#93c5fd');x.fillStyle=g;x.fillRect(0,0,800,600);x.fillStyle='rgba(255,255,255,.65)';x.beginPath();x.arc(400,250,95,0,7);x.fill();x.beginPath();x.ellipse(400,600,180,210,0,Math.PI,0);x.fill()}return DM};
 const getDM=()=>defDM();
-function prevNow(){const ims=document.querySelectorAll('.pvs img[data-pk]');if(!ims.length)return;const d=getDM();ims.forEach(im=>{const k=im.dataset.pk;im.src=compose(k,fill(k,d)).toDataURL('image/jpeg',.7)});filt();thumbs()}
+function prevNow(){const ims=document.querySelectorAll('.pvs img[data-pk]');if(!ims.length)return;const d=getDM();ims.forEach(im=>{const k=im.dataset.pk;im.src=cvURL(compose(k,fill(k,d)),'image/jpeg',.7)});filt();thumbs()}
 const prev=()=>{clearTimeout(pt);pt=setTimeout(prevNow,120)};
 const filt=()=>{const q=($('#sq')||{value:''}).value.toLowerCase();document.querySelectorAll('.tp').forEach(b=>b.hidden=!((cat==='Todos'||b.dataset.cat===cat||(cat==='Ilustradas'&&b.dataset.il))&&b.dataset.n.includes(q)))};
-async function thumbs(){if(!$('#tg'))return;const v=++tgv;for(const t of allT()){if(v!==tgv)return;const im=$('img[data-t="'+t.id+'"]'),k=tk(t);if(!im)return;if(!TC[k]){TC[k]=compose('pola',[getDM()],{...cfg,...tc(t),nofr:1,nolg:1}).toDataURL('image/jpeg',.5);await sleep(0)}im.src=TC[k]}}
+let TIO=null;
+async function thumbs(){if(!$('#tg'))return;const v=++tgv;if(TIO){TIO.disconnect();TIO=null}
+  const M=new Map(allT().map(t=>[t.id,t])),q=[];let busy=0;
+  const mk=t=>{const k=tk(t);if(!TC[k]){const cv=compose('pola',[getDM()],{...cfg,...tc(t),nofr:1,nolg:1}),sm=document.createElement('canvas'),w=300,h=Math.round(w*cv.height/cv.width);sm.width=w;sm.height=h;sm.getContext('2d').drawImage(cv,0,0,w,h);cv.width=cv.height=0;TC[k]=cvURL(sm,'image/jpeg',.8)}return TC[k]};
+  const run=async()=>{if(busy)return;busy=1;while(q.length&&v===tgv){const im=q.shift(),t=M.get(im.dataset.t);if(t&&im.isConnected){try{im.src=mk(t)}catch(e){console.warn('miniatura',t.id,e)}await sleep(0)}}busy=0};
+  const ims=[...document.querySelectorAll('#tg img[data-t]')];
+  if(!('IntersectionObserver' in window)){ims.forEach(im=>q.push(im));return run()}
+  TIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){TIO.unobserve(e.target);q.push(e.target)}});run()},{rootMargin:'300px 0px'});
+  ims.forEach(im=>{const t=M.get(im.dataset.t),k=t&&tk(t);if(k&&TC[k])im.src=TC[k];else TIO.observe(im)})}
 
 async function inp(e){const t=e.target;
   if(t.dataset.p){const v=t.value;PR[t.dataset.p]=v!==''&&!isNaN(+v)?+v:v;kvSet('pr',PR);return prUpd()}if(t.id==='lk')return mkqr();if(t.id==='sq')return filt();
@@ -1945,7 +1961,7 @@ async function act(e){
   if(a==='pf'){pf=k;if(dtab==='logo')return page();$('.pvs').dataset.pf=k;document.querySelectorAll('.pvs img').forEach(i=>i.classList.toggle('on',i.dataset.pk===k));document.querySelectorAll('.pvc .seg button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return}
   if(a==='today'){cfg.dt=new Date().toLocaleDateString('pt-BR');dirty();return page()}
   if(a==='psz'){const[kk,w]=k.split(':'),f=FMT[kk].p+'W';PR[f]=+w;kvSet('pr',PR);const i=$('input[data-p='+f+']');if(i)i.value=w;return prUpd()}
-  if(a==='ptest'){const d=getDM();if(grpOn()){const G=grpGeo(k);if(!G)return alert('Não cabe na folha escolhida.');const u=compose(k,fill(k,d)).toDataURL('image/jpeg',.92);return printSheet((await grpSheet(k,Array(G.n).fill(u))).toDataURL('image/jpeg',.95),G.pw,G.ph)}return printImg(compose(k,fill(k,d)).toDataURL('image/jpeg',.92),k)}
+  if(a==='ptest'){const d=getDM();if(grpOn()){const G=grpGeo(k);if(!G)return alert('Não cabe na folha escolhida.');const u=cvURL(compose(k,fill(k,d)),'image/jpeg',.92);return printSheet((await grpSheet(k,Array(G.n).fill(u))).toDataURL('image/jpeg',.95),G.pw,G.ph)}return printImg(cvURL(compose(k,fill(k,d)),'image/jpeg',.92),k)}
   if(a==='gq')return show('queue');
   if(a==='notif'){await Notification.requestPermission();return page()}
   if(a==='pa'){const pq=(await pAll()).filter(p=>p.status==='pending'&&qf(p)).sort((x,y)=>x.ts-y.ts),po=grpOn();
@@ -1980,6 +1996,15 @@ async function act(e){
   if(a==='qd'){if(!S.gid)return;const cv=qrCard(),a2=document.createElement('a');a2.href=cv.toDataURL('image/png');a2.download='qrcode-'+String(cfg.event).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';document.body.appendChild(a2);a2.click();return setTimeout(()=>a2.remove(),500)}
   if(a==='q6p'){if(!S.gid)return;return qrPrint()}
   if(a==='q6d'){if(!S.gid)return;return qrPdf()}
+  if(a==='tkp'||a==='tkv'||a==='tkt'){const m=(t,er)=>{const p=$('#tkm');if(p){p.textContent=t;p.className=er?'err':'m'}},inp=$('#tk');if(!inp)return;
+    if(a==='tkv'){inp.type=inp.type==='password'?'text':'password';return}
+    if(a==='tkp'){try{const t=(await navigator.clipboard.readText()).trim();if(!t)return m('A área de transferência está vazia. Copie o token no GitHub primeiro.',1);inp.value=t;m('Token colado. Agora toque em Testar token.')}catch(e){m('O navegador não deixou colar automaticamente. Toque no campo, segure o dedo e escolha Colar.',1)}return}
+    const t=inp.value.trim();if(!t)return m('Cole o token no campo primeiro.',1);m('Testando…');
+    try{const r=await fetch('https://api.github.com/user',{cache:'no-store',headers:{Authorization:'Bearer '+t,Accept:'application/vnd.github+json'}});
+      if(r.status===401)return m('Token inválido ou expirado. Crie um novo no botão acima.',1);if(!r.ok)return m('O GitHub respondeu '+r.status+'. Tente de novo em instantes.',1);
+      const u=await r.json(),sc=r.headers.get('x-oauth-scopes'),fine=t.startsWith('github_pat_');
+      if(!fine&&sc!==null&&!/(^|[ ,])gist([ ,]|$)/.test(sc))return m('O token da conta '+u.login+' funciona, mas está sem a permissão “gist”. Crie outro marcando “gist”.',1);
+      m('✓ Token OK · conta '+u.login+'. Agora toque em Salvar / criar Gist.')}catch(e){m('Sem conexão com o GitHub. Verifique a internet.',1)}return}
   if(a==='ss'){S={tok:$('#tk').value.trim(),gid:$('#gi').value.trim()};
     if(!S.gid)S.gid=(await gh('POST','',{description:'Cabine de Fotos',public:false,files:{'config.json':{content:JSON.stringify(cfg)}}})).id;else await gGet();
     await kvSet('sync',S);return admin()}
