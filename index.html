@@ -541,7 +541,7 @@ const stopCam=()=>{stream&&stream.getTracks().forEach(t=>t.stop());stream=null};
 function cover(x,s,bx,by,bw,bh){const r=Math.max(bw/s.width,bh/s.height),w=bw/r,h=bh/r;x.drawImage(s,(s.width-w)/2,(s.height-h)/2,w,h,bx,by,bw,bh)}
 const FONTS=[['Clássica (serifa)','Georgia,serif'],['Moderna','Arial,sans-serif'],['Divertida','"Trebuchet MS",sans-serif'],['Impacto','"Arial Black",Impact,sans-serif'],['Cursiva','"Brush Script MT",cursive'],['Máquina de escrever','"Courier New",monospace'],['Elegante','"Palatino Linotype",Palatino,serif'],['Cursiva elegante (Great Vibes)','"Great Vibes","Brush Script MT","Segoe Script",cursive'],['Romana clássica (Cinzel)','Cinzel,"Trajan Pro",Georgia,serif'],['Garamond','"Cormorant Garamond",Garamond,Georgia,serif'],['Didot (sofisticada)','"Didot","Bodoni 72","Bodoni MT","Playfair Display",Georgia,serif'],['Giz / escolar','"Comic Sans MS","Chalkboard SE","Comic Neue","Trebuchet MS",sans-serif']];
 const G='Georgia,serif',D='"Trebuchet MS",sans-serif',I='"Arial Black",Impact,sans-serif',A='Arial,sans-serif',FT='"Courier New",monospace',FB='"Brush Script MT",cursive',FE='"Palatino Linotype",Palatino,serif',DI='"Didot","Bodoni 72","Bodoni MT","Playfair Display",Georgia,serif',CH='"Comic Sans MS","Chalkboard SE","Comic Neue","Trebuchet MS",sans-serif';
-const CATS=['Ilustradas','OAB Alagoas','Instagram','Empresarial','Moderno','Casamento','Aniversário','Debutante (15 anos)','Infantil','Chá de bebê','Religioso','Formatura Faculdade','Formatura Ensino Médio','Formatura ABC','Praia','Ambientes','Corporativo','Festas','Sazonal','Amizade','Vintage','Polaroide','Molduras'];
+const CATS=['Ilustradas','OAB Alagoas','Instagram','Empresarial','Moderno','Casamento','Aniversário','Times de Futebol','Debutante (15 anos)','Infantil','Chá de bebê','Religioso','Formatura Faculdade','Formatura Ensino Médio','Formatura ABC','Praia','Ambientes','Corporativo','Festas','Sazonal','Amizade','Vintage','Polaroide','Molduras'];
 /* ---------- MOLDURAS ILUSTRADAS: desenhos próprios em vetor (nada de imagens externas) ---------- */
 const hx=h=>{h=String(h||'#000');if(h.startsWith('rgb'))return h.match(/[\d.]+/g).slice(0,3).map(Number);h=h.replace('#','');if(h.length===3)h=h.replace(/./g,'$&$&');const n=parseInt(h,16);return[n>>16&255,n>>8&255,n&255]};
 const mx=(h,t)=>{const c=hx(h),o=t>0?255:0,a=Math.abs(t);return'rgb('+c.map(v=>Math.round(v+(o-v)*a)).join(',')+')'};
@@ -897,6 +897,38 @@ function decoCorner(x,px,py,s,rot,lw){x.save();x.translate(px,py);x.rotate(rot);
   [[s*1.3,-s*.12],[-s*.12,s*1.3]].forEach(([a,b])=>{x.save();x.translate(a,b);x.rotate(Math.PI/4);x.fillRect(-lw*2.2,-lw*2.2,lw*4.4,lw*4.4);x.restore()});x.restore()}
 function goldSprigs(x,px,py,L,a,round){[-.5,0,.5].forEach((d,i)=>sprig(x,px,py,L*(i===1?1:.78),a+d,i===1?'#c9a24b':'#b8892b',round))}
 
+/* ---- times de futebol: cores e padrão da camisa + elementos genéricos (sem escudos nem mascotes) ---- */
+let CF='pola';
+const lumi=h=>{const[r,g,b]=hx(h);return(r*299+g*587+b*114)/255000};
+function kitFill(x,x0,y0,w,h,c,u){const sc=c.sc||[c.color,c.c2||c.color],st=c.st||'v';x.save();x.beginPath();x.rect(x0,y0,w,h);x.clip();x.fillStyle=sc[0];x.fillRect(x0,y0,w,h);
+  if(st==='h'){const sh=u*11;for(let y=y0,i=0;y<y0+h;y+=sh,i++){x.fillStyle=sc[i%sc.length];x.fillRect(x0,y,w,sh+1)}}
+  else if(st==='v'){const sw=u*8.5;for(let px=x0,i=0;px<x0+w;px+=sw,i++){x.fillStyle=sc[i%sc.length];x.fillRect(px,y0,sw+1,h)}}
+  else if(st==='d'){x.save();x.translate(x0+w*.5,y0+h*.5);x.rotate(-Math.PI/4);x.fillStyle=sc[1];const L=Math.hypot(w,h);x.fillRect(-L,-u*9,2*L,u*18);x.restore()}
+  else if(st==='band'){const y=y0+h*.3;x.fillStyle=sc[1];x.fillRect(x0,y,w,u*7);x.fillStyle=sc[2]||sc[1];x.fillRect(x0,y+u*7,w,u*7);x.fillStyle=sc[1];x.fillRect(x0,y0+h*.86,w,u*3);x.fillStyle=sc[2]||sc[1];x.fillRect(x0,y0+h*.86+u*3,w,u*3)}
+  else if(st==='pin'){x.strokeStyle=al(sc[1],.3);x.lineWidth=Math.max(1,u*.35);for(let px=x0;px<x0+w;px+=u*4.5){x.beginPath();x.moveTo(px,y0);x.lineTo(px,y0+h);x.stroke()}}
+  else if(st==='field'){const sw=u*10;for(let y=y0,i=0;y<y0+h;y+=sw,i++){x.fillStyle=i%2?sc[0]:sc[1];x.fillRect(x0,y,w,sw+1)}x.strokeStyle='rgba(255,255,255,.55)';x.lineWidth=u*.6;x.strokeRect(x0+u*3,y0+u*3,w-u*6,h-u*6);x.beginPath();x.moveTo(x0+u*3,y0+h/2);x.lineTo(x0+w-u*3,y0+h/2);x.stroke();x.beginPath();x.arc(x0+w/2,y0+h/2,Math.min(w,h)*.16,0,TAU);x.stroke();x.strokeRect(x0+w*.25,y0+u*3,w*.5,h*.12);x.strokeRect(x0+w*.25,y0+h-u*3-h*.12,w*.5,h*.12)}
+  /* textura de tecido (malha) */x.fillStyle='rgba(0,0,0,.05)';for(let yy=y0;yy<y0+h;yy+=u*1.1)for(let xx=x0+((yy/u|0)%2)*u*.55;xx<x0+w;xx+=u*1.1)x.fillRect(xx,yy,u*.3,u*.3);x.restore()}
+function ball(x,cx,cy,r,rot=0){x.save();x.translate(cx,cy);x.rotate(rot);x.shadowColor='rgba(0,0,0,.35)';x.shadowBlur=r*.3;x.shadowOffsetY=r*.1;circ(x,0,0,r,'#fff');x.shadowColor='transparent';x.beginPath();x.arc(0,0,r,0,TAU);x.clip();
+  const pent=(px,py,s,a)=>{x.beginPath();for(let i=0;i<5;i++){const t=a+i/5*TAU-Math.PI/2;x.lineTo(px+Math.cos(t)*s,py+Math.sin(t)*s)}x.closePath();x.fillStyle='#1c1c1c';x.fill()};
+  pent(0,0,r*.34,0);x.strokeStyle='#1c1c1c';x.lineWidth=r*.04;x.lineJoin='round';for(let i=0;i<5;i++){const t=i/5*TAU-Math.PI/2,ox=Math.cos(t)*r*1.0,oy=Math.sin(t)*r*1.0;pent(ox,oy,r*.33,t+Math.PI*1.5);x.beginPath();x.moveTo(Math.cos(t)*r*.34,Math.sin(t)*r*.34);x.lineTo(Math.cos(t)*r*.67,Math.sin(t)*r*.67);x.stroke();const m=t+Math.PI/5;x.beginPath();x.moveTo(Math.cos(t)*r*.67,Math.sin(t)*r*.67);x.lineTo(Math.cos(m)*r*.84,Math.sin(m)*r*.84);x.lineTo(Math.cos(t+TAU/5)*r*.67,Math.sin(t+TAU/5)*r*.67);x.stroke()}
+  const g=x.createRadialGradient(-r*.35,-r*.4,r*.1,0,0,r);g.addColorStop(0,'rgba(255,255,255,.45)');g.addColorStop(.6,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(0,0,0,.28)');x.fillStyle=g;x.fillRect(-r,-r,2*r,2*r);x.restore()}
+function trophy(x,cx,cy,s){x.save();x.translate(cx,cy);const g=gold(x,-s,-s,s,s);x.fillStyle=g;x.strokeStyle=g;x.shadowColor='rgba(0,0,0,.3)';x.shadowBlur=s*.15;
+  x.lineWidth=s*.11;[-1,1].forEach(d=>{x.beginPath();x.arc(d*s*.58,-s*.47,s*.25,d<0?Math.PI*.5:-Math.PI*.5,d<0?Math.PI*1.5:Math.PI*.5,false);x.stroke()});
+  x.beginPath();x.moveTo(-s*.6,-s*.85);x.lineTo(s*.6,-s*.85);x.bezierCurveTo(s*.6,-s*.05,s*.25,s*.15,s*.1,s*.2);x.lineTo(-s*.1,s*.2);x.bezierCurveTo(-s*.25,s*.15,-s*.6,-s*.05,-s*.6,-s*.85);x.fill();
+  x.fillRect(-s*.09,s*.18,s*.18,s*.38);x.beginPath();x.roundRect(-s*.42,s*.55,s*.84,s*.16,s*.04);x.fill();x.beginPath();x.roundRect(-s*.55,s*.7,s*1.1,s*.24,s*.05);x.fill();x.shadowColor='transparent';
+  star5(x,0,-s*.45,s*.2,'#fff7d6');x.fillStyle='rgba(255,255,255,.35)';x.beginPath();x.ellipse(-s*.32,-s*.5,s*.07,s*.25,.15,0,TAU);x.fill();x.restore()}
+function scarf(x,x0,y0,x1,y1,w,c,u){const sc=(c.sc||[c.color,c.c2]).slice(0,3),L=Math.hypot(x1-x0,y1-y0),a=Math.atan2(y1-y0,x1-x0);x.save();x.translate(x0,y0);x.rotate(a);x.shadowColor='rgba(0,0,0,.3)';x.shadowBlur=u*1.2;
+  x.fillStyle=sc[0];x.fillRect(0,-w/2,L,w);x.shadowColor='transparent';const bw=w*.9;for(let p=0,i=0;p<L;p+=bw,i++){x.fillStyle=sc[i%sc.length];x.fillRect(p,-w/2,Math.min(bw,L-p)+.5,w)}
+  x.fillStyle='rgba(255,255,255,.12)';x.fillRect(0,-w/2,L,w*.18);x.fillStyle='rgba(0,0,0,.12)';x.fillRect(0,w/2-w*.18,L,w*.18);
+  [0,L].forEach((e,k)=>{for(let i=0;i<7;i++){const yy=-w/2+w*(i+.5)/7;x.strokeStyle=sc[i%sc.length];x.lineWidth=Math.max(1.2,w*.08);x.lineCap='round';x.beginPath();x.moveTo(e,yy);x.lineTo(e+(k?1:-1)*w*.55,yy+(i%2?w*.04:-w*.04));x.stroke()}});x.restore()}
+function jersey(x,cx,cy,s,c,num){x.save();x.translate(cx,cy);const P=()=>{x.beginPath();x.moveTo(-s*.32,-s);x.quadraticCurveTo(0,-s*.78,s*.32,-s);x.lineTo(s*.95,-s*.8);x.lineTo(s*1.3,-s*.3);x.lineTo(s*.92,-s*.1);x.lineTo(s*.86,s);x.lineTo(-s*.86,s);x.lineTo(-s*.92,-s*.1);x.lineTo(-s*1.3,-s*.3);x.lineTo(-s*.95,-s*.8);x.closePath()};
+  x.shadowColor='rgba(0,0,0,.35)';x.shadowBlur=s*.25;x.shadowOffsetY=s*.06;P();x.fillStyle=(c.sc||[c.color])[0];x.fill();x.shadowColor='transparent';
+  x.save();P();x.clip();kitFill(x,-s*1.4,-s*1.1,s*2.8,s*2.2,c,s*.045);const g=x.createLinearGradient(-s,0,s,0);g.addColorStop(0,'rgba(0,0,0,.18)');g.addColorStop(.5,'rgba(255,255,255,.08)');g.addColorStop(1,'rgba(0,0,0,.2)');x.fillStyle=g;x.fillRect(-s*1.4,-s*1.1,s*2.8,s*2.2);x.restore();
+  const sc=c.sc||[c.color,c.c2],tr=c.tr||sc[1]||'#fff';x.strokeStyle=tr;x.lineWidth=s*.1;x.beginPath();x.moveTo(-s*.32,-s);x.quadraticCurveTo(0,-s*.78,s*.32,-s);x.stroke();
+  const base=c.st==='v'||c.st==='h'?'#000000':sc[0],light=lumi(base)>.55,nf=light?'#111111':'#ffffff';x.font='900 '+s*.95+'px "Arial Black",Impact,sans-serif';x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';
+  x.lineWidth=s*.14;x.strokeStyle=light?'#ffffff':'#111111';x.strokeText(num,0,s*.12);x.fillStyle=nf;x.fillText(num,0,s*.12);x.restore()}
+const ageOf=c=>{const m=String(c.event||'').match(/(\d{1,2})\s*(anos?|°|º)?/i);return m?m[1]:'10'};
+
 /* ---- fundos (camada de trás) ---- */
 const BGX={
   wash:(x,W,H,c,cols)=>{const u=Math.min(W,H)/100;cols.forEach((col,i)=>{const r=rng(31+i);for(let k=0;k<4;k++)blob(x,r()*W,r()*H,u*(25+r()*30),col,.22)})},
@@ -1047,6 +1079,13 @@ const IL={
     web(x,-u*1,-u*1,u*24,0);pumpkin(x,u*11,H-u*9,u*9);pumpkin(x,u*25,H-u*5,u*5.5);pumpkin(x,W-u*10,H-u*8,u*7.5)}},
   boteco:{n:'Boteco',bg:(x,W,H,c)=>BGX.gingham(x,W,H,c,'#ffffff'),fg:(x,W,H,c,u)=>{bunting(x,-u*2,u*2,W+u*2,u*2,11,['#ef4444','#facc15','#22c55e','#3b82f6','#ffffff'],u*5);
     mug(x,u*11,H-u*10,u*10,1);mug(x,W-u*13,H-u*10,u*10,1);[[u*24,H-u*4],[W-u*26,H-u*4]].forEach(([a,b],i)=>star5(x,a,b,u*2.5,'#facc15',i));lights(x,W*.35,u*1,W+u*2,u*3,6,['#fde68a','#fb923c'],u*1)}},
+  /* ---- times de futebol (cores e padrão da camisa; sem escudos nem mascotes) ---- */
+  futebol:{n:'Futebol (cores do time)',bg:(x,W,H,c)=>{const u=Math.min(W,H)/100;kitFill(x,0,0,W,H,c,u);const F=FMT[CF];if(F){const T=F.T,top=T[0][1]-T[0][0]*1.08,bot=Math.min(H-u*1.5,T[2][1]+T[2][0]*.6);
+      x.save();x.shadowColor='rgba(0,0,0,.4)';x.shadowBlur=u*2.2;x.fillStyle=al(c.pn||'#111111',.93);x.beginPath();x.roundRect(W*.12,top,W*.76,bot-top,u*2.6);x.fill();x.shadowColor='transparent';x.strokeStyle=c.acc;x.lineWidth=Math.max(2,u*.5);x.stroke();
+      x.lineWidth=Math.max(1,u*.18);x.strokeStyle=al('#ffffff',.35);x.beginPath();x.roundRect(W*.12+u*.9,top+u*.9,W*.76-u*1.8,bot-top-u*1.8,u*2);x.stroke();x.restore()}},
+    fg:(x,W,H,c,u)=>{const sc=c.sc||[c.color,c.c2];scarf(x,-u*7,u*21,u*25,-u*7,u*7.5,c,u);ball(x,W-u*10,u*10,u*8,.3);
+      x.save();x.strokeStyle='rgba(255,255,255,.85)';x.lineWidth=u*.7;x.lineCap='round';[0,1,2].forEach(i=>{x.beginPath();x.moveTo(W-u*(20.5+i*.8),u*(5+i*4.5));x.lineTo(W-u*(27+i*1.6),u*(5+i*4.5));x.stroke()});x.restore();
+      jersey(x,u*13,H-u*12,u*10.5,c,ageOf(c));trophy(x,W-u*11,H-u*11,u*10);star5(x,W-u*23,H-u*5,u*2.2,'#fde047',.2);star5(x,W-u*4,H-u*25,u*1.8,'#fde047');confettiAt(x,W,H,u,[...sc.slice(0,3),'#fde047'],26,13,16)}},
   /* ---- debutante clássica ---- */
   xv:{n:'Monograma XV',bg:(x,W,H,c)=>BGX.stars(x,W,H,c,al(c.acc,.55)),fg:(x,W,H,c,u)=>{goldFrame(x,W,H,u);vines(x,W,H,u,c);xvMedal(x,W/2,-u*1.6,u*6.5,c.color);glints(x,W,H,u,6,7)}},
   tiara:{n:'Tiara e pérolas',bg:(x,W,H,c)=>{BGX.wash(x,W,H,c,[c.acc,'#ffffff']);BGX.stars(x,W,H,c,al(c.acc,.35))},fg:(x,W,H,c,u)=>{goldFrame(x,W,H,u);pearls(x,-u*1.6,-u*1.6,W/2-u*11,u*1,u*7,u*.9);pearls(x,W/2+u*11,u*1,W+u*1.6,-u*1.6,u*7,u*.9);
@@ -1167,6 +1206,28 @@ const TPL=[
 ['am6','Boteco','Festas','#b91c1c','#991b1b','#ffffff','#facc15',I,'il-boteco','classic',{sh:'rect',rd:16}],
 ['am7','Arraiá no Campo','Sazonal','#fff7ed','#fde68a','#7c2d12','#dc2626',I,'il-campo','classic',{sh:'rect',rd:12}],
 /* ---- debutante clássica ---- */
+/* ---- times de futebol: cores e padrão da camisa (sem escudos nem mascotes oficiais) ---- */
+['tm01','Flamengo (rubro-negro)','Times de Futebol','#c8102e','#111111','#ffffff','#e4002b',I,'il-futebol','classic',{sh: 'rect', st: 'h', sc: ['#c8102e', '#111111'], pn: '#111111', rd: 18}],
+['tm02','Corinthians (alvinegro)','Times de Futebol','#ffffff','#111111','#ffffff','#d4d4d4',I,'il-futebol','classic',{sh: 'arch', st: 'pin', sc: ['#ffffff', '#111111'], pn: '#111111', tr: '#111111'}],
+['tm03','Palmeiras (alviverde)','Times de Futebol','#006437','#ffffff','#ffffff','#ffffff',I,'il-futebol','classic',{sh: 'rect', st: 'pin', sc: ['#006437', '#ffffff'], pn: '#00331c', tr: '#ffffff', rd: 18}],
+['tm04','São Paulo (tricolor)','Times de Futebol','#ffffff','#e30613','#ffffff','#e30613',I,'il-futebol','classic',{sh: 'oval', st: 'band', sc: ['#ffffff', '#e30613', '#111111'], pn: '#111111', tr: '#e30613'}],
+['tm05','Vasco (faixa diagonal)','Times de Futebol','#111111','#ffffff','#ffffff','#ffffff',I,'il-futebol','classic',{sh: 'rect', st: 'd', sc: ['#111111', '#ffffff'], pn: '#111111', tr: '#ffffff', rd: 18}],
+['tm06','Fluminense (tricolor)','Times de Futebol','#7a1031','#ffffff','#ffffff','#00a85a',I,'il-futebol','classic',{sh: 'arch', st: 'v', sc: ['#7a1031', '#ffffff', '#00613c'], pn: '#3d0818', tr: '#ffffff'}],
+['tm07','Botafogo (alvinegro)','Times de Futebol','#111111','#ffffff','#ffffff','#ffffff',I,'il-futebol','classic',{sh: 'rect', st: 'v', sc: ['#111111', '#ffffff'], pn: '#111111', rd: 18}],
+['tm08','Santos (alvinegro)','Times de Futebol','#ffffff','#111111','#ffffff','#ffffff',I,'il-futebol','classic',{sh: 'oval', st: 'v', sc: ['#ffffff', '#111111'], pn: '#111111'}],
+['tm09','Atlético-MG (alvinegro)','Times de Futebol','#111111','#ffffff','#ffffff','#facc15',I,'il-futebol','classic',{sh: 'rect', st: 'v', sc: ['#111111', '#ffffff'], pn: '#000000', rd: 18}],
+['tm10','Cruzeiro (azul celeste)','Times de Futebol','#0033a0','#ffffff','#ffffff','#ffffff',I,'il-futebol','classic',{sh: 'arch', st: 'pin', sc: ['#0033a0', '#ffffff'], pn: '#001b57', tr: '#ffffff'}],
+['tm11','Grêmio (tricolor gaúcho)','Times de Futebol','#0d80bf','#111111','#ffffff','#0d80bf',I,'il-futebol','classic',{sh: 'rect', st: 'v', sc: ['#0d80bf', '#111111', '#ffffff'], pn: '#0a1a2a', rd: 18}],
+['tm12','Internacional (colorado)','Times de Futebol','#d2001f','#ffffff','#ffffff','#ffffff',I,'il-futebol','classic',{sh: 'oval', st: 'pin', sc: ['#d2001f', '#ffffff'], pn: '#7a0012', tr: '#ffffff'}],
+['tm13','Bahia (tricolor)','Times de Futebol','#ffffff','#0033a0','#ffffff','#e30613',I,'il-futebol','classic',{sh: 'rect', st: 'band', sc: ['#ffffff', '#0033a0', '#e30613'], pn: '#0a1f5c', tr: '#e30613', rd: 18}],
+['tm14','Vitória (rubro-negro)','Times de Futebol','#e30613','#111111','#ffffff','#e30613',I,'il-futebol','classic',{sh: 'arch', st: 'h', sc: ['#e30613', '#111111'], pn: '#111111'}],
+['tm15','Sport (rubro-negro)','Times de Futebol','#d50000','#111111','#ffffff','#facc15',I,'il-futebol','classic',{sh: 'rect', st: 'h', sc: ['#d50000', '#111111'], pn: '#111111', rd: 18}],
+['tm16','Fortaleza (tricolor)','Times de Futebol','#e30613','#ffffff','#ffffff','#e30613',I,'il-futebol','classic',{sh: 'oval', st: 'h', sc: ['#e30613', '#ffffff', '#0033a0'], pn: '#0a1f5c'}],
+['tm17','Ceará (alvinegro)','Times de Futebol','#111111','#ffffff','#ffffff','#d4d4d4',I,'il-futebol','classic',{sh: 'rect', st: 'v', sc: ['#111111', '#ffffff'], pn: '#111111', rd: 18}],
+['tm18','CSA (azulão)','Times de Futebol','#0a3d91','#ffffff','#ffffff','#ffffff',I,'il-futebol','classic',{sh: 'arch', st: 'pin', sc: ['#0a3d91', '#ffffff'], pn: '#05204d', tr: '#ffffff'}],
+['tm19','CRB (alvirrubro)','Times de Futebol','#d0102c','#ffffff','#ffffff','#ffffff',I,'il-futebol','classic',{sh: 'rect', st: 'h', sc: ['#d0102c', '#ffffff'], pn: '#7a0012', rd: 18}],
+['tm20','Seleção Brasileira','Times de Futebol','#ffdf00','#009c3b','#ffffff','#009c3b',I,'il-futebol','classic',{sh: 'oval', st: 'plain', sc: ['#ffdf00', '#009c3b'], pn: '#002776', tr: '#009c3b'}],
+['tm21','Futebol no Campo (qualquer time)','Times de Futebol','#2e8b3d','#38a34a','#ffffff','#ffffff',I,'il-futebol','classic',{sh: 'rect', st: 'field', sc: ['#2e8b3d', '#38a34a'], pn: '#0f3d1a', tr: '#ffffff', rd: 18}],
 /* ---- debutante: XV clássico (layout próprio com coroa, louros e flores) ---- */
 ['xv1','XV Clássico Rosé','Debutante (15 anos)','#fbe3e8','#f3c6d0','#a35a72','#c9a24b','"Great Vibes","Brush Script MT","Segoe Script",cursive','none','xv15',{fl:'#e88fa3'}],
 ['xv2','XV Clássico Lilás','Debutante (15 anos)','#f1e8f8','#dccbee','#6d4a8e','#c9a24b','"Great Vibes","Brush Script MT","Segoe Script",cursive','none','xv15',{fl:'#b48ad6'}],
@@ -1468,7 +1529,7 @@ if(window.CanvasRenderingContext2D&&!CanvasRenderingContext2D.prototype.roundRec
   const m=Math.min(w,h)/2,[A,B,C,D]=q.map(v=>Math.max(0,Math.min(v,m)));this.moveTo(x+A,y);this.lineTo(x+w-B,y);this.arcTo(x+w,y,x+w,y+B,B);this.lineTo(x+w,y+h-C);this.arcTo(x+w,y+h,x+w-C,y+h,C);this.lineTo(x+D,y+h);this.arcTo(x,y+h,x,y+h-D,D);this.lineTo(x,y+A);this.arcTo(x,y,x+A,y,A);this.closePath()};
 /* iOS/iPadOS limitam a memória total de canvas (~384 MB): zerar o canvas após usar libera na hora */
 function cvURL(cv,t='image/jpeg',q=.9){const u=cv.toDataURL(t,q);cv.width=cv.height=0;return u}
-function compose(f,s,c=cfg){const F=FMT[f]||FMT.pola,W=F.W,H=F.H,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+function compose(f,s,c=cfg){CF=FMT[f]?f:'pola';const F=FMT[f]||FMT.pola,W=F.W,H=F.H,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
   const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,c.color);g.addColorStop(1,c.c2||c.color);x.fillStyle=g;x.fillRect(0,0,W,H);
   if(FR.bg&&c.bo>0)drawBg(x,W,H,c);deco(x,W,H,c);
   if(c.ly&&LYF[c.ly])LYF[c.ly](x,W,H,F.B.length,s,c);else{
