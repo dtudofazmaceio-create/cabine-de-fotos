@@ -353,7 +353,11 @@ async function loadCfg(){const g=await gGet(),f=g.files;
    e o toque em Imprimir chama window.print() na própria página, com CSS só de impressão. */
 const IOS=/iP(ad|hone|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),PQ=[];
 function goPrint(f){if(!IOS){f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),4000);return}
-  const d=f.contentDocument,css=[...d.querySelectorAll('style')].map(s=>s.textContent).join('\n'),html=d.body.innerHTML,img=(d.querySelector('img')||{}).src||'';f.remove();PQ.push({css,html,img});iosPM()}
+  const d=f.contentDocument,css=[...d.querySelectorAll('style')].map(s=>s.textContent).join('\n'),html=d.body.innerHTML,img=(d.querySelector('img')||{}).src||'';f.remove();PQ.push({css,html,img});iosPM();
+  const ua=navigator.userActivation;if(PQ.length===1&&ua&&ua.isActive){const p=document.getElementById('prt');Promise.all([...p.querySelectorAll('img')].map(i=>i.decode?i.decode().catch(()=>0):0)).then(()=>{if(PQ.length===1&&ua.isActive)iosGo()})}}
+function iosGo(){if(!PQ[0])return;let fired=0;const done=()=>{if(fired)return;fired=1;window.removeEventListener('afterprint',done);try{localStorage.setItem('cab_ipok',Date.now())}catch(e){}PQ.shift();iosPM();const c=document.getElementById('ipst');if(c)c.innerHTML=ipStatus()};
+  window.addEventListener('afterprint',done);window.print();setTimeout(()=>{const g=document.querySelector('[data-pp=go]');if(g&&!fired)g.lastChild.textContent='Imprimir de novo'},1500)}
+function ipStatus(){let t=0;try{t=+localStorage.getItem('cab_ipok')||0}catch(e){}return t?'<span class=ok>'+ico('checkc')+' Impressora já usada neste iPad · última impressão em '+new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span>':'<span class=err>'+ico('warn')+' Nenhuma impressora usada ainda neste iPad</span>'}
 const scopeCss=css=>css.replace(/(^|\})\s*([^{}@]+)\{/g,(m,b,sel)=>b+sel.split(',').map(t=>{t=t.trim();return t==='html'?'html':t==='body'?'#prt':'#prt '+t}).join(',')+'{');
 function iosPM(){let m=document.getElementById('prtm');const j=PQ[0];if(!j){if(m)m.remove();const p=document.getElementById('prt');if(p)p.innerHTML='';return}
   let st=document.getElementById('prtS');if(!st){st=document.createElement('style');st.id='prtS';document.head.appendChild(st)}
@@ -362,7 +366,7 @@ function iosPM(){let m=document.getElementById('prtm');const j=PQ[0];if(!j){if(m
   if(!m){m=document.createElement('div');m.id='prtm';document.body.appendChild(m)}
   m.innerHTML='<div class=prtc>'+(j.img?'<img src="'+j.img+'" alt="">':'')+'<p style="margin:12px 0 4px"><b>Pronto para imprimir</b>'+(PQ.length>1?' · 1 de '+PQ.length:'')+'</p><p class=m style="font-size:13px;margin:0 0 12px">No iPad/iPhone a impressão precisa de um toque. Na janela que abrir, escolha a impressora e o tamanho do papel.</p><div><button class=pri data-pp=go>'+ico('print')+'Imprimir</button>'+(PQ.length>1?'<button data-pp=skip>Pular</button>':'')+'<button data-pp=x>Fechar</button></div></div>'}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-pp]');if(!b)return;e.preventDefault();e.stopPropagation();const v=b.dataset.pp;
-  if(v==='go'){if(!PQ[0])return;let fired=0;const done=()=>{if(fired)return;fired=1;window.removeEventListener('afterprint',done);PQ.shift();iosPM()};window.addEventListener('afterprint',done);window.print();setTimeout(()=>{const g=document.querySelector('[data-pp=go]');if(g&&!fired)g.lastChild.textContent='Imprimir de novo'},1500);return}
+  if(v==='go')return iosGo();
   if(v==='skip'){PQ.shift();return iosPM()}if(v==='x'){PQ.length=0;return iosPM()}},true);
 
 /* ---------- utilitários ---------- */
@@ -1662,7 +1666,12 @@ async function prn(){
   ${SEL('gG','Espaço entre as fotos',[[0,'Nenhum (encostadas)'],[1,'1 mm'],[2,'2 mm'],[3,'3 mm'],[5,'5 mm']])}${SEL('gW','Impressão automática: se a folha não completar, esperar',[[1,'1 minuto'],[2,'2 minutos'],[3,'3 minutos'],[5,'5 minutos'],[10,'10 minutos'],[0,'Sempre esperar completar']])}</div>
   <label class=ck><input type=checkbox data-a=gcut ${PR.gC?'checked':''}> Linha tracejada de corte em volta de cada foto</label>
   <p class=m style="font-size:13px;margin:0">Cada modelo só é agrupado com fotos do mesmo modelo. Veja abaixo como fica a folha de cada um.</p>`:''}</div>`;
-  return `${gcard}<div class=g2c>${FK.map(blk).join('')}</div>
+  const ipcard=IOS?`<div class=card><h2>${ico('print')} Impressora do iPad</h2><p id=ipst style="margin:-4px 0 10px;font-size:13.5px">${ipStatus()}</p>
+  <ol class=m style="font-size:13.5px;margin:0 0 10px;padding-left:20px;line-height:1.55"><li>Ligue a impressora e deixe-a no <b>mesmo Wi-Fi</b> do iPad.</li><li>Toque em <b>Conectar / trocar impressora</b>. Na janela que abrir, toque em <b>Impressora</b>: o iPad procura as impressoras da rede. Escolha a sua.</li><li>Escolha o papel e toque em <b>Imprimir</b>. Sai uma folha de teste.</li></ol>
+  <p class=m style="font-size:13.5px;margin:0 0 10px">Pronto: o iPad guarda essa impressora. Nas próximas fotos ela já vem selecionada, é só confirmar em <b>Imprimir</b>. Para trocar, toque de novo no botão abaixo e escolha outra.</p>
+  <button class=pri data-a=ipcon>${ico('print')}Conectar / trocar impressora</button>
+  <p class=m style="font-size:12.5px;margin:10px 0 0">A impressora não aparece na lista? Confira se ela está ligada, no mesmo Wi-Fi e se é compatível com AirPrint (a maioria das impressoras recentes é).</p></div>`:'';
+  return `${ipcard}${gcard}<div class=g2c>${FK.map(blk).join('')}</div>
   <div class=card><h2>Liberação e testes</h2><label class=ck><input type=checkbox data-a=auto ${AUTO?'checked':''}> Imprimir automaticamente, sem aprovação (desligado: você decide cada foto)</label>${IOS?'<p class=m style="font-size:12.5px;margin:-4px 0 10px">No iPad/iPhone, o sistema exige um toque para cada impressão: as fotos chegam e aparecem uma a uma em “Pronto para imprimir”. Para imprimir sem nenhum toque, use um computador com o Chrome.</p>':''}
   <p class=m style="font-size:13px">Estes ajustes valem para este computador e já são aplicados na hora. Na janela de impressão do navegador, deixe a escala em 100% e as margens em “Nenhuma”.</p>
   ${FK.map(k=>`<button data-a=ptest data-k=${k}>${ico(FMT[k].ic)}Imprimir teste · ${FMT[k].n.toLowerCase()}</button>`).join('')}</div>`}
@@ -1980,6 +1989,9 @@ async function act(e){
   if(a==='today'){cfg.dt=new Date().toLocaleDateString('pt-BR');dirty();return page()}
   if(a==='psz'){const[kk,w]=k.split(':'),f=FMT[kk].p+'W';PR[f]=+w;kvSet('pr',PR);const i=$('input[data-p='+f+']');if(i)i.value=w;return prUpd()}
   if(a==='ptest'){const d=getDM();if(grpOn()){const G=grpGeo(k);if(!G)return alert('Não cabe na folha escolhida.');const u=cvURL(compose(k,fill(k,d)),'image/jpeg',.92);return printSheet((await grpSheet(k,Array(G.n).fill(u))).toDataURL('image/jpeg',.95),G.pw,G.ph)}return printImg(cvURL(compose(k,fill(k,d)),'image/jpeg',.92),k)}
+  if(a==='ipcon'){const c=document.createElement('canvas');c.width=1200;c.height=1800;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,1200,1800);x.strokeStyle='#999';x.lineWidth=4;x.setLineDash([20,14]);x.strokeRect(40,40,1120,1720);x.setLineDash([]);x.fillStyle='#16a34a';x.beginPath();x.arc(600,640,150,0,7);x.fill();x.strokeStyle='#fff';x.lineWidth=34;x.lineCap='round';x.lineJoin='round';x.beginPath();x.moveTo(525,645);x.lineTo(585,705);x.lineTo(690,580);x.stroke();
+    x.fillStyle='#111';x.textAlign='center';x.font='700 76px sans-serif';x.fillText('Impressora conectada',600,920);x.font='44px sans-serif';x.fillStyle='#555';x.fillText('Cabine de Fotos · teste de impressão',600,1000);x.fillText(new Date().toLocaleString('pt-BR'),600,1070);
+    return printImg(cvURL(c,'image/png'),'f1015')}
   if(a==='gq')return show('queue');
   if(a==='notif'){await Notification.requestPermission();return page()}
   if(a==='pa'){const pq=(await pAll()).filter(p=>p.status==='pending'&&qf(p)).sort((x,y)=>x.ts-y.ts),po=grpOn();
