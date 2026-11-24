@@ -190,6 +190,14 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--m)}
 .s34{position:relative;width:min(100%,240px);margin:14px auto 6px;background:#fff;border:1px solid var(--b);box-shadow:0 6px 18px rgba(0,0,0,.14)}
 .s34 i{position:absolute;background:#e5e7eb var(--ph,none) center/cover no-repeat;outline:1px solid #8b5cf6}
 
+/* plano de fundo da câmera (troca do fundo real) */
+.cam canvas.vbc{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}.cam canvas.vbc[hidden]{display:none}
+.vbpv{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;border:1px solid var(--b);background:var(--c2);margin:10px 0 6px}
+.vbg{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px;max-height:440px;overflow:auto;padding:2px;margin:8px 0 12px}
+.vbi{position:relative;display:flex;flex-direction:column;align-items:stretch;text-align:left;padding:6px;margin:0;gap:2px;border:2px solid var(--b);border-radius:12px;background:var(--c)}
+.vbi img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:7px;background:var(--c2)}.vbi b{font-size:12px;margin-top:4px;line-height:1.2}.vbi small{font-size:11px;color:var(--m);font-weight:500}
+.vbi.on{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 22%,transparent)}.vbi.on .tb{display:grid;top:10px;right:10px}.vbi[hidden]{display:none}
+.vbtm{position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px}.vbtm .prtc{background:var(--c);color:var(--fg);border:1px solid var(--b);border-radius:18px;padding:16px;width:100%;max-width:640px;text-align:center}
 /* plano de fundo do sistema */
 #bgl{position:fixed;inset:0;z-index:-1;pointer-events:none;background-size:cover;background-repeat:no-repeat;transform-origin:center}
 html.hasbg .card{background:color-mix(in srgb,var(--c) 88%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
@@ -467,7 +475,7 @@ textarea:focus{outline:0;border-color:var(--ac);box-shadow:0 0 0 3px color-mix(i
 <script>
 const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms)),app=$('#app');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false,geo:true,bo:60,bz:100,bx:50,by:50,f1015:true,f1015t:false,f1520:true,f1010:true,f7510:true,si:6,ly:'classic',ig:'',tag:'',lgOn:true,lg:{x:88,y:7,w:20,o:100},lgf:{},my:[],sh:'rect',cam:'user',flash:false,gdl:true,prt:true,codp:true,pub:true,intro:true,introConf:true,introBal:true,introLuz:true,introMsg:'Seja bem-vindo à minha festinha!\nEstou muito feliz com a sua presença! Você é muito importante para tornar este dia especial.',introSig:''};
+const DEF={event:'Minha Festa',foot:'',dt:'',max:2,strip:true,pola:true,confirm:true,dup:false,tpl:'aniv',color:'#7c3aed',c2:'#ec4899',text:'#ffffff',acc:'#fde047',font:'"Trebuchet MS",sans-serif',d:'confetti',sz:100,rd:0,pb:'w',up:false,geo:true,bo:60,bz:100,bx:50,by:50,f1015:true,f1015t:false,f1520:true,f1010:true,f7510:true,si:6,ly:'classic',ig:'',tag:'',lgOn:true,lg:{x:88,y:7,w:20,o:100},lgf:{},my:[],sh:'rect',cam:'user',flash:false,gdl:true,prt:true,codp:true,pub:true,intro:true,introConf:true,introBal:true,introLuz:true,vbOn:false,vb:'auto',vbOff:true,introMsg:'Seja bem-vindo à minha festinha!\nEstou muito feliz com a sua presença! Você é muito importante para tornar este dia especial.',introSig:''};
 const PRT=()=>cfg.prt!==false,DLD=()=>!!cfg.gdl||!PRT(),PUB=()=>cfg.pub!==false;
 /* aceita @usuario, usuario ou link do perfil; devolve '@usuario' ou '' se for inválido */
 const igMention=()=>{const u=String(cfg.ig||'').trim().replace(/^(https?:\/\/)?(www\.)?instagram\.com\//i,'').replace(/[\/?#].*$/,'').replace(/^@+/,'');return /^[A-Za-z0-9._]{1,30}$/.test(u)?'@'+u:''};
@@ -515,7 +523,7 @@ async function stampCode(src,code){const im=await loadImg(src);if(!im)return src
   x.fillStyle='#111';x.textBaseline='middle';x.textAlign='center';x.fillText(t,bx+bw/2,by+bh/2+fs*.04);return cvURL(cv,'image/jpeg',.92)}
 async function loadCfg(){const g=await gGet(),f=g.files;
   cfg={...DEF,...JSON.parse(f['config.json']?await txt(f['config.json']):'{}')};
-  for(const k of[...FK,'bg','logo']){FR[k]=null;const ff=f['frame-'+k+'.txt'];if(ff){const u=await txt(ff);if(u.startsWith('data:'))FR[k]=await loadImg(u)}}
+  for(const k of[...FK,'bg','logo','vbg']){FR[k]=null;const ff=f['frame-'+k+'.txt'];if(ff){const u=await txt(ff);if(u.startsWith('data:'))FR[k]=await loadImg(u)}}
   BGG=null;if(cfg.bgG&&f['bg.txt'])try{BGG=JSON.parse(await txt(f['bg.txt']))}catch(e){}
   return g}
 
@@ -581,7 +589,7 @@ async function saveImg(url,name){let bl;try{bl=await(await fetch(url)).blob()}ca
   if(bl&&mob&&navigator.canShare){const file=new File([bl],name,{type:bl.type||'image/jpeg'});
     if(navigator.canShare({files:[file]}))try{await navigator.share({files:[file],title:cfg.event});return}catch(e){if(e&&e.name==='AbortError')return}}
   const a=document.createElement('a');a.href=bl?URL.createObjectURL(bl):url;a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{if(bl)URL.revokeObjectURL(a.href);a.remove()},2000)}
-const stopCam=()=>{stream&&stream.getTracks().forEach(t=>t.stop());stream=null};
+const stopCam=()=>{vbStop();stream&&stream.getTracks().forEach(t=>t.stop());stream=null};
 function cover(x,s,bx,by,bw,bh){const r=Math.max(bw/s.width,bh/s.height),w=bw/r,h=bh/r;x.drawImage(s,(s.width-w)/2,(s.height-h)/2,w,h,bx,by,bw,bh)}
 const FONTS=[['Clássica (serifa)','Georgia,serif'],['Moderna','Arial,sans-serif'],['Divertida','"Trebuchet MS",sans-serif'],['Impacto','"Arial Black",Impact,sans-serif'],['Cursiva','"Brush Script MT",cursive'],['Máquina de escrever','"Courier New",monospace'],['Elegante','"Palatino Linotype",Palatino,serif'],['Cursiva elegante (Great Vibes)','"Great Vibes","Brush Script MT","Segoe Script",cursive'],['Romana clássica (Cinzel)','Cinzel,"Trajan Pro",Georgia,serif'],['Garamond','"Cormorant Garamond",Garamond,Georgia,serif'],['Didot (sofisticada)','"Didot","Bodoni 72","Bodoni MT","Playfair Display",Georgia,serif'],['Giz / escolar','"Comic Sans MS","Chalkboard SE","Comic Neue","Trebuchet MS",sans-serif']];
 const G='Georgia,serif',D='"Trebuchet MS",sans-serif',I='"Arial Black",Impact,sans-serif',A='Arial,sans-serif',FT='"Courier New",monospace',FB='"Brush Script MT",cursive',FE='"Palatino Linotype",Palatino,serif',DI='"Didot","Bodoni 72","Bodoni MT","Playfair Display",Georgia,serif',CH='"Comic Sans MS","Chalkboard SE","Comic Neue","Trebuchet MS",sans-serif';
@@ -1937,6 +1945,7 @@ async function guestHome(){
   app.innerHTML='<p class="m ld"><i class=spin></i>Carregando…</p>';
   try{await loadCfg()}catch(e){return app.innerHTML='<div class="card err">Não foi possível conectar. Verifique a internet e recarregue.</div>'}
   applyBG(BGG);
+  if(cfg.vbOn)vbSeg();/* baixa o recorte de fundo enquanto a introdução aparece */
   if(cfg.intro!==false&&!introDone){introDone=true;await showIntro()}
   const f=FK.filter(k=>cfg[k]).map(k=>[k,FMT[k].n,FMT[k].s,FMT[k].ic]);
   app.innerHTML=`<header class=hero><span class=hi>${ico('camera')}</span><h1>${esc(cfg.event)}</h1><p class=m>${PRT()?'Tire sua foto e ela sai impressa com a moldura da festa.'+(DLD()?' Você também pode baixar no celular.':''):'Tire sua foto com a moldura da festa e baixe no seu celular.'}</p></header>
@@ -1948,14 +1957,16 @@ async function begin(f){
   const n='',k=devId();
   let used=0;if(PRT())try{used=countOf(await gGet(),k)}catch(e){return $('#er').textContent='Sem conexão com o servidor.'}
   if(PRT()&&used>=cfg.max)return $('#er').textContent=`Você já usou suas ${cfg.max} foto(s) permitidas.`;
-  fmt=f;guest={n,k,used};geo=getGeo();
-  app.innerHTML=`<div class=cam><video id=v playsinline muted></video><div id=cd></div><div id=fl></div><div class=camt><button id=fz hidden title="Flash" aria-label="Flash">${ico('zap')}</button><button id=sw hidden title="Trocar câmera" aria-label="Trocar câmera">${ico('flip')}</button></div><div class=camz hidden><input type=range id=zr min=1 max=4 step=0.1 value=1 aria-label="Zoom"><b id=zl>1x</b></div><i class="cc a"></i><i class="cc b"></i><i class="cc c"></i><i class="cc d"></i></div><p id=ms class=m>Abrindo câmera…</p><div class=fm><button class=pri id=go disabled>${ico('play')}Começar</button><button id=bk>${ico('back')}Voltar</button></div>`;
+  fmt=f;guest={n,k,used};geo=getGeo();VBW=!!cfg.vbOn&&!VBF;
+  app.innerHTML=`<div class=cam><video id=v playsinline muted></video><canvas id=vbc class=vbc hidden></canvas><div id=cd></div><div id=fl></div><div class=camt><button id=vbb hidden title="Plano de fundo" aria-label="Plano de fundo">${ico('image')}</button><button id=fz hidden title="Flash" aria-label="Flash">${ico('zap')}</button><button id=sw hidden title="Trocar câmera" aria-label="Trocar câmera">${ico('flip')}</button></div><div class=camz hidden><input type=range id=zr min=1 max=4 step=0.1 value=1 aria-label="Zoom"><b id=zl>1x</b></div><i class="cc a"></i><i class="cc b"></i><i class="cc c"></i><i class="cc d"></i></div><p id=ms class=m>Abrindo câmera…</p><div class=fm><button class=pri id=go disabled>${ico('play')}Começar</button><button id=bk>${ico('back')}Voltar</button></div>`;
   $('#bk').onclick=()=>route();
   if(!fac)fac=cfg.cam==='environment'?'environment':'user';if(fon===null)fon=!!cfg.flash;
-  $('#sw').onclick=async()=>{fac=fac==='user'?'environment':'user';$('#go').disabled=true;try{await openCam()}catch(e){fac=fac==='user'?'environment':'user';try{await openCam()}catch(e2){}}$('#go').disabled=false};
+  $('#sw').onclick=async()=>{fac=fac==='user'?'environment':'user';$('#go').disabled=true;try{await openCam()}catch(e){fac=fac==='user'?'environment':'user';try{await openCam()}catch(e2){}}await vbRun();$('#go').disabled=false};
+  $('#vbb').onclick=async()=>{const b=$('#vbb');VBW=!VBW;if(VBW){b.disabled=$('#go').disabled=true;await vbRun();b.disabled=$('#go').disabled=false}else vbStop();vbUI()};
   $('#fz').onclick=()=>{fon=!fon;camUI()};$('#zr').oninput=e=>setZoom(+e.target.value);pinch($('.cam'));
   try{await openCam();
-    $('#ms').textContent=FMT[f].B.length>1?`Vamos fazer ${FMT[f].B.length} poses! Entre uma e outra você terá ${Math.max(3,+cfg.si||6)} segundos para mudar de pose. Toque em Começar.`:'Toque em Começar e sorria!';
+    if(VBW){$('#ms').innerHTML='<i class=spin></i>Preparando o plano de fundo do evento…';await vbRun()}
+    $('#ms').className='m';$('#ms').textContent=FMT[f].B.length>1?`Vamos fazer ${FMT[f].B.length} poses! Entre uma e outra você terá ${Math.max(3,+cfg.si||6)} segundos para mudar de pose. Toque em Começar.`:'Toque em Começar e sorria!';
     $('#go').disabled=false;$('#go').onclick=shoot}
   catch(e){$('#ms').className='err';$('#ms').textContent='Não consegui acessar a câmera. Permita o acesso e recarregue a página.'}}
 
@@ -1987,9 +1998,10 @@ const setTorch=on=>{try{return stream.getVideoTracks()[0].applyConstraints({adva
 async function flashOn(){if(!fon)return;if(!mir&&torch){try{await setTorch(true)}catch(e){}return sleep(400)}
   if(!mir)return;let f=$('#sf');if(!f){f=document.createElement('div');f.id='sf';document.body.appendChild(f)}f.style.opacity=1;await sleep(300)}
 async function flashOff(){if(!fon)return;if(!mir&&torch)try{await setTorch(false)}catch(e){}const f=$('#sf');if(f)f.style.opacity=0}
-function snap(){const v=$('#v'),z=zd(),vw=v.videoWidth,vh=v.videoHeight,sw=vw/z,sh=vh/z,c=document.createElement('canvas');c.width=Math.round(sw);c.height=Math.round(sh);const x=c.getContext('2d');if(mir){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(v,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,c.width,c.height);return c}
+function snap(){if(VBS&&VBS.ok&&VBS.o.isConnected){const o=VBS.o,c=document.createElement('canvas');c.width=o.width;c.height=o.height;c.getContext('2d').drawImage(o,0,0);return c}/* com plano de fundo: a imagem já sai recortada, espelhada e com zoom */
+  const v=$('#v'),z=zd(),vw=v.videoWidth,vh=v.videoHeight,sw=vw/z,sh=vh/z,c=document.createElement('canvas');c.width=Math.round(sw);c.height=Math.round(sh);const x=c.getContext('2d');if(mir){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(v,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,c.width,c.height);return c}
 async function shoot(){
-  $('#go').disabled=true;$('#bk').disabled=true;$('#sw').disabled=$('#fz').disabled=true;const N=FMT[fmt].B.length,shots=[];
+  $('#go').disabled=true;$('#bk').disabled=true;$('#sw').disabled=$('#fz').disabled=$('#vbb').disabled=true;const N=FMT[fmt].B.length,shots=[];
   for(let i=0;i<N;i++){
     /* da 2ª pose em diante a contagem é maior (cfg.si), para o convidado mudar de posição */
     const w=i?Math.max(3,+cfg.si||6):3;
@@ -2026,6 +2038,83 @@ function result(img){
       if(left)$('#nw').onclick=()=>guestHome()}
     catch(e){$('#sm').className='err';$('#sm').textContent='Falha no envio. Verifique a internet.';$('#ab').innerHTML=`<button class=pri id=rt>${ico('reset')}Tentar de novo</button>`;$('#rt').onclick=up}};
   if(PRT())up();else{$('#ab').innerHTML=`<button id=nw>${ico('camera')}Nova foto</button>`;$('#nw').onclick=()=>guestHome()}}
+
+/* ---------- PLANO DE FUNDO DA CÂMERA ----------
+   Enquanto o convidado tira a foto, o fundo real é trocado pelo plano de fundo do evento.
+   O recorte da pessoa usa o MediaPipe Selfie Segmenter, que roda no próprio aparelho (a imagem não sai dele).
+   cfg.vbOn = liga · cfg.vb = 'auto' (combina com o modelo do evento) | 't:<id do modelo>' (fundo de um tema) | 'custom' (imagem importada → frame-vbg.txt)
+   cfg.vbOff = mostra ao convidado o botão para desligar o fundo */
+const VBU='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14',VBM='https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite';
+let VBP=null,VBS=null,VBW=false,VBF=0,VBC='Todos',VTV=0;const VBT={};
+function vbSeg(){if(!VBP){VBP=(async()=>{const m=await import(VBU+'/vision_bundle.mjs'),fs=await m.FilesetResolver.forVisionTasks(VBU+'/wasm');
+  return m.ImageSegmenter.createFromOptions(fs,{baseOptions:{modelAssetPath:VBM,delegate:'CPU'},runningMode:'VIDEO',outputCategoryMask:false,outputConfidenceMasks:true})})();
+  VBP.catch(e=>{console.warn('Plano de fundo indisponível:',e);VBP=null})}return VBP}
+/* configuração visual do fundo escolhido (cores, decoração e desenhos do tema) */
+const vbCfg=(sel,c=cfg)=>{if(sel&&sel.startsWith('t:')){const t=allT().find(x=>x.id===sel.slice(2));if(t)return{...c,...tc(t)}}return c};
+/* desenha o fundo de um tema: degradê + decoração do modelo + desenhos ilustrados nos cantos (centro livre para a pessoa) */
+function vbTheme(c,W,H){const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d'),cf=CF;CF='vb';
+  try{const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,c.color);g.addColorStop(1,c.c2||c.color);x.fillStyle=g;x.fillRect(0,0,W,H);
+    const v=x.createRadialGradient(W/2,H*.55,Math.min(W,H)*.15,W/2,H*.55,Math.max(W,H)*.75);v.addColorStop(0,'rgba(255,255,255,.10)');v.addColorStop(1,'rgba(0,0,0,.12)');
+    deco(x,W,H,c);x.fillStyle=v;x.fillRect(0,0,W,H);
+    const T=String(c.d||'').startsWith('il-')&&IL[c.d.slice(3)];if(T&&T.fg){x.save();T.fg(x,W,H,c,Math.min(W,H)/100);x.restore()}}catch(e){console.warn(e)}
+  CF=cf;return cv}
+function vbBackdrop(W,H,sel,c=cfg){sel=sel||c.vb||'auto';
+  if(sel==='custom'&&FR.vbg){const cv=document.createElement('canvas');cv.width=W;cv.height=H;cover(cv.getContext('2d'),FR.vbg,0,0,W,H);return cv}
+  return vbTheme(vbCfg(sel,c),W,H)}
+/* galeria: automático, importado, um fundo para cada tema ilustrado e até 2 por categoria dos demais modelos */
+function vbList(){const L=[{id:'auto',n:'Automático',k:'Combina com o modelo'}];if(FR.vbg)L.push({id:'custom',n:'Imagem importada',k:'Seu arquivo'});
+  const sd=new Set(),pc={};
+  allT().forEach(t=>{const d=String(t.d||'');
+    if(d.startsWith('il-')){if(sd.has(d)||!IL[d.slice(3)])return;sd.add(d);L.push({id:'t:'+t.id,n:IL[d.slice(3)].n,k:t.k})}
+    else if(d&&d!=='none'&&(pc[t.k]=(pc[t.k]||0)+1)<=2)L.push({id:'t:'+t.id,n:t.n,k:t.k})});
+  return L}
+const vbKey=id=>id+'|'+(id==='auto'?[cfg.color,cfg.c2,cfg.acc,cfg.text,cfg.d].join():id==='custom'?(FR.vbg?FR.vbg.src.length:0):'');
+function vbThumb(id){const k=vbKey(id);if(!VBT[k]){const b=vbBackdrop(800,600,id),c=document.createElement('canvas');c.width=240;c.height=180;c.getContext('2d').drawImage(b,0,0,240,180);b.width=b.height=0;VBT[k]=cvURL(c,'image/jpeg',.8)}return VBT[k]}
+async function vbThumbs(){const v=++VTV;vbPv();let n=0;for(const im of document.querySelectorAll('img[data-vb]')){if(v!==VTV||!im.isConnected)return;im.src=vbThumb(im.dataset.vb);if(++n%4===0)await sleep(0)}}
+/* prévia grande com a silhueta de um convidado na frente */
+function vbPv(){const im=$('#vbpv');if(!im)return;const b=vbBackdrop(960,720),x=b.getContext('2d');x.save();x.fillStyle='rgba(15,23,42,.6)';x.shadowColor='rgba(0,0,0,.35)';x.shadowBlur=30;
+  x.beginPath();x.ellipse(480,330,86,108,0,0,TAU);x.fill();x.beginPath();x.moveTo(240,720);x.bezierCurveTo(250,520,360,462,480,462);x.bezierCurveTo(600,462,710,520,720,720);x.closePath();x.fill();
+  x.shadowColor='transparent';x.fillStyle='rgba(255,255,255,.85)';x.font='600 28px Inter,Arial,sans-serif';x.textAlign='center';x.fillText('Convidado',480,640);x.restore();im.src=cvURL(b,'image/jpeg',.85)}
+/* decide, nos primeiros quadros, se a máscara indica a pessoa (centro) ou o fundo (cantos) */
+function vbOrient(S,a,W,H){let c=0,cn=0,b=0,bn=0;for(let y=0;y<H;y+=4)for(let px=0;px<W;px+=4){const v=a[y*W+px],fx=px/W,fy=y/H;if(fx>.4&&fx<.6&&fy>.35){c+=v;cn++}else if((fx<.12||fx>.88)&&fy<.3){b+=v;bn++}}
+  const d=c/cn-b/bn;if(Math.abs(d)>.25){S.acc+=Math.sign(d);if(Math.abs(S.acc)>=5){S.inv=S.acc<0;S.dec=1}}if(++S.n>600)S.dec=1}
+/* loop: vídeo (espelhado + zoom) → máscara 256 px → pessoa recortada por cima do fundo, no canvas o */
+function vbStart(seg,v,o,P){vbStop();const sm=document.createElement('canvas'),mk=document.createElement('canvas'),sx=sm.getContext('2d'),kx=mk.getContext('2d'),ox=o.getContext('2d');
+  const S={run:1,ok:0,o,inv:false,dec:0,acc:0,n:0,prev:null,id:null,bd:null,bk:'',t:0,raf:0};VBS=S;
+  const step=()=>{if(!S.run)return;S.raf=requestAnimationFrame(step);const vw=v.videoWidth,vh=v.videoHeight;if(!vw||!vh||v.readyState<2)return;
+    try{const M=P.mir(),z=P.z(),sw=vw/z,sh=vh/z,cx=(vw-sw)/2,cy=(vh-sh)/2,SW=256,SH=Math.max(2,Math.round(SW*vh/vw));
+      if(o.width!==vw||o.height!==vh){o.width=vw;o.height=vh}
+      if(S.bk!==vw+'x'+vh){S.bk=vw+'x'+vh;const BW=Math.max(960,Math.min(1600,vw));S.bd=P.bd(BW,Math.round(BW*vh/vw))}
+      if(sm.width!==SW||sm.height!==SH){sm.width=mk.width=SW;sm.height=mk.height=SH;S.id=kx.createImageData(SW,SH);S.prev=null}
+      sx.setTransform(M?-1:1,0,0,1,M?SW:0,0);sx.drawImage(v,cx,cy,sw,sh,0,0,SW,SH);
+      const ts=Math.max(S.t+1,performance.now());S.t=ts;
+      seg.segmentForVideo(sm,ts,r=>{const ms=r.confidenceMasks||[],m=ms[ms.length-1];if(!m)return;const a=m.getAsFloat32Array(),d=S.id.data,N=SW*SH;if(a.length<N)return;
+        if(!S.dec)vbOrient(S,a,SW,SH);const pv=S.prev||(S.prev=new Float32Array(N).fill(-1));
+        for(let i=0;i<N;i++){const p=S.inv?1-a[i]:a[i],q=pv[i]<0?p:pv[i]*.35+p*.65;pv[i]=q;const t=Math.min(1,Math.max(0,(q-.3)/.4));d[i*4+3]=t*t*(3-2*t)*255}
+        kx.putImageData(S.id,0,0)});
+      ox.globalCompositeOperation='copy';ox.setTransform(M?-1:1,0,0,1,M?vw:0,0);ox.drawImage(v,cx,cy,sw,sh,0,0,vw,vh);ox.setTransform(1,0,0,1,0,0);
+      ox.globalCompositeOperation='destination-in';ox.imageSmoothingEnabled=true;ox.drawImage(mk,0,0,vw,vh);
+      ox.globalCompositeOperation='destination-over';ox.drawImage(S.bd,0,0,vw,vh);ox.globalCompositeOperation='source-over';S.ok=1}
+    catch(e){console.warn('Plano de fundo:',e);vbStop();P.fail&&P.fail(e)}};
+  S.raf=requestAnimationFrame(step);return S}
+function vbStop(){if(VBS){VBS.run=0;cancelAnimationFrame(VBS.raf);VBS=null}const v=$('#v'),o=$('#vbc');if(v)v.style.opacity='';if(o)o.hidden=true}
+function vbUI(){const b=$('#vbb');if(!b)return;b.hidden=!cfg.vbOn||!!VBF||cfg.vbOff===false;b.classList.toggle('on',VBW);b.title=b.ariaLabel='Plano de fundo '+(VBW?'ligado':'desligado')}
+/* liga o fundo na câmera do convidado; se não carregar (sem internet, navegador antigo), segue com a câmera normal */
+async function vbRun(){const v=$('#v'),o=$('#vbc');if(!v||!o||!VBW||!stream)return vbUI();let seg;
+  try{seg=await Promise.race([vbSeg(),sleep(30000).then(()=>{throw new Error('tempo esgotado')})])}
+  catch(e){VBF=1;VBW=false;vbUI();const m=$('#ms');if(m){m.className='m';m.textContent='Não foi possível carregar o plano de fundo. A foto será tirada com o fundo real.'}return}
+  if(!VBW||$('#v')!==v||!stream)return vbUI();
+  vbStart(seg,v,o,{mir:()=>mir,z:zd,bd:(W,H)=>vbBackdrop(W,H),fail:()=>{VBF=1;VBW=false;vbUI()}});v.style.opacity=0;o.hidden=false;vbUI()}
+/* painel: testa o recorte com a câmera deste computador/celular, usando as configurações ainda não publicadas */
+async function vbTest(){const d=document.createElement('div');d.className='vbtm';
+  d.innerHTML=`<div class=prtc><h2 style="margin:0 0 10px">Teste do plano de fundo</h2><div class=cam><video playsinline muted style="opacity:0"></video><canvas class=vbc></canvas></div><p class=m id=vbtm><i class=spin></i>Abrindo câmera e carregando o recorte…</p><button class=pri data-x>${ico('x')}Fechar</button></div>`;
+  document.body.appendChild(d);const v=d.querySelector('video'),o=d.querySelector('canvas'),msg=t=>{const p=d.querySelector('#vbtm');if(p)p.textContent=t};let st=null,S=null;
+  const close=()=>{if(S&&VBS===S)vbStop();st&&st.getTracks().forEach(t=>t.stop());d.remove()};d.querySelector('[data-x]').onclick=close;d.onclick=e=>{if(e.target===d)close()};
+  try{st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:960}},audio:false});if(!d.isConnected)return close();v.srcObject=st;await v.play()}
+  catch(e){return msg('Não consegui abrir a câmera deste aparelho.')}
+  try{const seg=await vbSeg();if(!d.isConnected)return close();S=vbStart(seg,v,o,{mir:()=>true,z:()=>1,bd:(W,H)=>vbBackdrop(W,H),fail:()=>msg('O recorte falhou neste navegador.')});
+    msg('Fique na frente da câmera. Boa iluminação e distância de 1 a 2 metros deixam o recorte mais preciso.')}
+  catch(e){msg('Não foi possível carregar o recorte de fundo (verifique a internet).')}}
 
 /* ---------- PAINEL PROFISSIONAL (#admin) ---------- */
 let TW=null,tab='home',GG=null,dirt=0,AUTO=true,pt,EVS=[],EP={},ER=0,QE='all';
@@ -2142,7 +2231,7 @@ function openMore(){closeMore();const d=document.createElement('div');d.classNam
   d.onclick=e=>{if(e.target===d)closeMore()};app.appendChild(d);requestAnimationFrame(()=>d.classList.add('in'))}
 function closeMore(){const m=$('#more');if(m)m.remove()}
 addEventListener('keydown',e=>{if(e.key==='Escape')closeMore()});
-async function page(){const P={home,events,design,rules,prn,f34:f34tab,queue,guests,bg:bgtab,conn};const h=await P[tab]();if(!$('#pg'))return;$('#pg').innerHTML=h;if(tab==='design')prevNow();if(tab==='conn')mkqr();if(tab==='f34')upd34();if(tab==='bg')updBGp();if(['queue','home'].includes(tab))geocode()}
+async function page(){const P={home,events,design,rules,prn,f34:f34tab,queue,guests,bg:bgtab,conn};const h=await P[tab]();if(!$('#pg'))return;$('#pg').innerHTML=h;if(tab==='design')prevNow();if(tab==='design'&&dtab==='ev')vbThumbs();if(tab==='conn')mkqr();if(tab==='f34')upd34();if(tab==='bg')updBGp();if(['queue','home'].includes(tab))geocode()}
 
 async function home(){
   const ps=await pAll(),pen=ps.filter(p=>p.status==='pending').length,ks=GG?Object.keys(GG.files).filter(k=>k.startsWith('c-')):[],gs=new Set(ks.map(k=>k.split('-')[1])).size,tp=allT().find(t=>t.id===cfg.tpl),key=JSON.stringify(cfg)+!!FR.pola+!!FR.bg+!!FR.logo+pvv;
@@ -2158,7 +2247,7 @@ async function design(){
   tpl:`${pvBox()}<input id=sq placeholder="Buscar modelo…"><div class=chips>${['Todos',...(cfg.my&&cfg.my.length?['Meus modelos']:[]),...CATS].map(c=>`<button class="chip ${c===cat?'on':''}" data-a=cat data-k="${c}">${c}</button>`).join('')}</div>
     <div class=tpls id=tg>${allT().map(t=>`<button class="tp ${t.id===cfg.tpl?'on':''}" data-a=tpl data-k="${t.id}" data-cat="${t.k}" ${String(t.d).startsWith('il-')?'data-il=1':''} data-n="${esc(t.n.toLowerCase())}"><img data-t="${t.id}" ${TC[tk(t)]?'src="'+TC[tk(t)]+'"':''}><span class=tb>${ico('check')}</span>${t.k==='Meus modelos'?`<span class=tdel data-a=mydel data-k="${t.id}" title="Excluir este modelo">${ico('trash')}</span>`:''}<b>${esc(t.n)}</b><small>${t.k}</small></button>`).join('')}</div><p class=m style="font-size:12px;margin:10px 0 0">Os temas infantis usam desenhos originais, sem personagens de marca. Quer Mickey, Peppa, super-heróis licenciados etc.? Envie a arte que você tem direito de usar na aba <b>Moldura PNG</b>: ela é aplicada por cima de qualquer modelo.</p>`,
   ev:`<div style="margin-top:12px">${F('event','Título do evento','placeholder="Ex.: Ana &amp; Pedro"')}${F('foot','Mensagem de rodapé','placeholder="Ex.: Obrigado por celebrar conosco"')}${F('dt','Data ou local (vazio = data de hoje)','placeholder="Ex.: 15/11/2026 · Maceió"')}<button data-a=today>${ico('calendar')}Usar a data de hoje</button>${F('ig','Instagram do dono da festa (aparece nos modelos Instagram e Story e é mencionado na legenda ao publicar)','placeholder="Ex.: @suaempresa"')}${F('tag','Hashtag do evento (sai impressa em todos os modelos)','placeholder="Ex.: #Convencao2026"')}${CK('up','Título em MAIÚSCULAS')}${R('sz','Tamanho do título (%)',70,130)}
-    <div class=card style="margin-top:14px"><h2>Introdução de boas-vindas</h2><p class=m style="margin:0 0 6px">Aparece por 5 segundos, com confetes, balões e luzes, assim que o convidado abre o link e antes de abrir a câmera.</p>${CK('intro','<b>Exibir a introdução</b>')}${cfg.intro!==false?`<label>Mensagem de agradecimento (a primeira linha vira o título)<textarea data-f=introMsg rows=4 placeholder="Seja bem-vindo à minha festinha!&#10;Estou muito feliz com a sua presença!">${esc(cfg.introMsg||'')}</textarea></label>${F('introSig','Assinatura (opcional)','placeholder="Ex.: Com carinho, Ana"')}<p class=lbl style="margin:14px 0 0">Efeitos (desmarque todos para ficar só a mensagem)</p>${CK('introConf','Confetes')}${CK('introBal','Balões')}${CK('introLuz','Luzes piscando')}<button data-a=introPv>${ico('play')}Ver introdução</button>`:''}</div></div>`,
+    <div class=card style="margin-top:14px"><h2>Introdução de boas-vindas</h2><p class=m style="margin:0 0 6px">Aparece por 5 segundos, com confetes, balões e luzes, assim que o convidado abre o link e antes de abrir a câmera.</p>${CK('intro','<b>Exibir a introdução</b>')}${cfg.intro!==false?`<label>Mensagem de agradecimento (a primeira linha vira o título)<textarea data-f=introMsg rows=4 placeholder="Seja bem-vindo à minha festinha!&#10;Estou muito feliz com a sua presença!">${esc(cfg.introMsg||'')}</textarea></label>${F('introSig','Assinatura (opcional)','placeholder="Ex.: Com carinho, Ana"')}<p class=lbl style="margin:14px 0 0">Efeitos (desmarque todos para ficar só a mensagem)</p>${CK('introConf','Confetes')}${CK('introBal','Balões')}${CK('introLuz','Luzes piscando')}<button data-a=introPv>${ico('play')}Ver introdução</button>`:''}</div>${vbCard()}</div>`,
   sty:`<div class=row4 style="margin-top:12px">${CL('color','Fundo 1')}${CL('c2','Fundo 2')}${CL('text','Texto')}${CL('acc','Destaque')}</div>
     <label>Layout<select data-f=ly>${LYN.map(([v,n])=>`<option value=${v} ${v===(cfg.ly||'classic')?'selected':''}>${n}</option>`).join('')}</select></label>
     <label>Formato da janela da foto (layout clássico)<select data-f=sh>${SHP.map(([v,n])=>`<option value=${v} ${v===(cfg.sh||'rect')?'selected':''}>${n}</option>`).join('')}</select></label>
@@ -2174,6 +2263,16 @@ async function design(){
   return `<div class=studio><div class=card><div class=seg>${DT.map(([k,n,i])=>`<button class="${k===dtab?'on':''}" data-a=sub data-k=${k}>${ico(i)}${n}</button>`).join('')}</div>${P[dtab]}</div>
   <aside class="card pvc"><div class=ph><h2>Prévia ao vivo</h2><div class=seg>${[['all','Todas'],...FK.map(k=>[k,FMT[k].n])].map(([k,n])=>`<button class="${k===pf?'on':''}" data-a=pf data-k=${k}>${n}</button>`).join('')}</div></div>
   <div class=stage><div class="pvs ${dtab==='logo'&&FR.logo?'lgm':''}" data-pf=${pf}>${FK.map(k=>`<img data-pk=${k} class="${k===pf?'on':''}" style="flex:${(FMT[k].W/FMT[k].H).toFixed(3)} 1 0">`).join('')}</div></div><p class=m style="font-size:12px;margin:12px 0 0">Alterações só chegam aos convidados após “Salvar e publicar” (Ctrl+S).</p></aside></div>`}
+/* cartão "Plano de fundo da câmera" (Dados do evento) */
+function vbCard(){const sel=cfg.vb==='custom'&&!FR.vbg?'auto':(cfg.vb||'auto'),L=vbList(),cats=['Todos',...new Set(L.slice(FR.vbg?2:1).map(i=>i.k))];
+  return `<div class=card style="margin-top:14px"><h2>Plano de fundo da câmera</h2><p class=m style="margin:0 0 6px">Enquanto o convidado tira a foto, o fundo real (parede, salão…) é trocado pelo plano de fundo do evento, e a foto já sai com ele. O recorte da pessoa é feito no próprio celular do convidado.</p>
+  ${CK('vbOn','<b>Usar plano de fundo na hora da foto</b>')}${cfg.vbOn?`<img id=vbpv class=vbpv alt="Prévia do plano de fundo">
+  <label>Importar plano de fundo (JPG ou PNG, de preferência na horizontal) ${FR.vbg?'<span class="ok tag"><i class=dot></i>importado</span>':''}<input type=file id=vbu accept=image/*></label>${frRow('vbg')}
+  <p class=lbl style="margin:14px 0 6px">Ou escolha um fundo que combina com os temas</p>
+  <div class=chips>${cats.map(c=>`<button class="chip ${c===VBC?'on':''}" data-a=vbcat data-k="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+  <div class=vbg>${L.map(i=>`<button class="vbi ${i.id===sel?'on':''}" data-a=vbsel data-k="${esc(i.id)}" data-cat="${esc(i.k)}" ${VBC==='Todos'||i.k===VBC||i.id==='auto'||i.id==='custom'?'':'hidden'}><img data-vb="${esc(i.id)}" alt=""><span class=tb>${ico('check')}</span><b>${esc(i.n)}</b><small>${esc(i.k)}</small></button>`).join('')}</div>
+  ${CK('vbOff','Mostrar ao convidado um botão para desligar o fundo')}<button data-a=vbtest>${ico('camera')}Testar com a câmera</button>
+  <p class=m style="font-size:12px;margin:6px 0 0">“Automático” acompanha as cores e a decoração do modelo escolhido em Modelos. Funciona melhor com boa iluminação e a pessoa a 1–2 m da câmera. No primeiro uso, o celular baixa cerca de 10 MB para fazer o recorte; se não conseguir, a foto sai com o fundo real. Clique em “Salvar e publicar” para valer para os convidados.</p>`:''}</div>`}
 const LGP=[['↖',10,8],['↑',50,8],['↗',90,8],['←',10,50],['•',50,50],['→',90,50],['↙',10,92],['↓',50,92],['↘',90,92]];
 function lgCtl(){const one=pf!=='all',p=lgOf(one?pf:null),ov=one&&cfg.lgf&&cfg.lgf[pf],RL=(k,t,a,b)=>`<label>${t}<output>${p[k]}</output><input type=range data-l=${k} min=${a} max=${b} value=${p[k]}></label>`;
   const cu=k=>!!(cfg.lgf&&cfg.lgf[k]&&Object.keys(cfg.lgf[k]).length),nc=FK.filter(cu).length;
@@ -2331,7 +2430,7 @@ function print34(){
   Promise.all([...d.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(go)}
 /* ---------- plano de fundo do sistema ---------- */
 let BG={img:null,op:40,z:100,x:50,y:50},BGG=null,delFr={};
-const frRow=k=>FR[k]?`<div class=frr><img src="${FR[k].src}"><button class=btn-del data-a=frx data-k=${k}>${ico('trash')}${k==='bg'?'Remover foto de fundo':k==='logo'?'Remover logo':'Remover moldura'}</button></div>`:'';
+const frRow=k=>FR[k]?`<div class=frr><img src="${FR[k].src}"><button class=btn-del data-a=frx data-k=${k}>${ico('trash')}${k==='bg'?'Remover foto de fundo':k==='logo'?'Remover logo':k==='vbg'?'Remover plano de fundo importado':'Remover moldura'}</button></div>`:'';
 function applyBG(b){let e=$('#bgl');if(!e){e=document.createElement('div');e.id='bgl';document.body.prepend(e)}
   const on=!!(b&&b.img);document.documentElement.classList.toggle('hasbg',on);e.style.display=on?'':'none';
   if(on){e.style.backgroundImage='url("'+b.img+'")';e.style.backgroundPosition=b.x+'% '+b.y+'%';e.style.opacity=b.op/100;e.style.transform='scale('+b.z/100+')'}}
@@ -2428,6 +2527,7 @@ async function inp(e){const t=e.target;
   if(t.dataset.p){const v=t.value;PR[t.dataset.p]=v!==''&&!isNaN(+v)?+v:v;kvSet('pr',PR);return prUpd()}if(t.id==='lk')return mkqr();if(t.id==='sq')return filt();
   if(t.id==='bkf'){const f=t.files[0];if(f)await importBackup(f);t.value='';return}
   if(t.id==='pvf'){const f=t.files[0];if(f){newFr.bg=shrink(await createImageBitmap(f),1600).toDataURL('image/jpeg',.85);FR.bg=await loadImg(newFr.bg);delete delFr.bg;bgClear();dirty();await page()}return}
+  if(t.id==='vbu'){const f=t.files[0];if(f){newFr.vbg=shrink(await createImageBitmap(f),1600).toDataURL('image/jpeg',.86);FR.vbg=await loadImg(newFr.vbg);delete delFr.vbg;cfg.vb='custom';dirty();await page()}return}
   if(t.id==='lgu'){const f=t.files[0];if(f){newFr.logo=shrink(await createImageBitmap(f),1000).toDataURL('image/png');FR.logo=await loadImg(newFr.logo);delete delFr.logo;dirty();await page()}return}
   if(t.dataset.l){setLg(t.dataset.l,+t.value);const o=t.parentNode.querySelector('output');if(o)o.textContent=t.value;return prev()}
   if(t.id==='f34f'){const f=t.files[0];if(f){F34I=shrink(await createImageBitmap(f),2400);F34.z=100;F34.ox=0;F34.oy=0;await page()}return}
@@ -2439,7 +2539,7 @@ async function inp(e){const t=e.target;
   if(t.type==='file'){const f=t.files[0];if(!f)return;const k=t.dataset.k,W=FMT[k].W,H=FMT[k].H,b=await createImageBitmap(f),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(b,0,0,W,H);newFr[k]=c.toDataURL('image/png');FR[k]=await loadImg(newFr[k]);dirty();return page()}
   if(t.id==='qpp'){QPP=t.value;return q6prev()}
   const f=t.dataset.f;if(!f)return;
-  cfg[f]=t.type==='checkbox'?t.checked:t.type==='number'?Math.max(1,+t.value||1):t.type==='range'?+t.value:t.value;if(t.type==='range'){const o=t.parentNode.querySelector('output');o&&(o.textContent=t.value)}dirty();if(f==='prt'||f==='gdl'||f==='intro')return page();if(f==='font'||t.type==='color'||f==='event'||f==='foot'||f==='dt')cfg.tpl=cfg.tpl;prev()}
+  cfg[f]=t.type==='checkbox'?t.checked:t.type==='number'?Math.max(1,+t.value||1):t.type==='range'?+t.value:t.value;if(t.type==='range'){const o=t.parentNode.querySelector('output');o&&(o.textContent=t.value)}dirty();if(f==='prt'||f==='gdl'||f==='intro'||f==='vbOn')return page();if(f==='font'||t.type==='color'||f==='event'||f==='foot'||f==='dt')cfg.tpl=cfg.tpl;prev()}
 /* ---------- cartão do QR Code (impressão/download) ---------- */
 function qrCard(){
   const c=cfg,W=1240,H=1754,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
@@ -2572,7 +2672,10 @@ async function act(e){
   if(a==='bkx')return exportBackup(!!($('#bkp')&&$('#bkp').checked));
   if(a==='q34'){F34.qty=k==='full'?Math.max(1,lay34().per):+k;const i=$('input[data-g=qty]');if(i)i.value=F34.qty;saveF34();return upd34()}
   if(a==='p34')return print34();
-  if(a==='frx'){if(!confirm(k==='bg'?'Remover a foto de fundo das molduras?':(k==='logo'?'Remover o logo?':'Remover a moldura PNG do formato '+fN(k)+'?')))return;delete newFr[k];FR[k]=null;delFr[k]=1;bgClear();dirty();return page()}
+  if(a==='vbsel'){cfg.vb=k;dirty();document.querySelectorAll('.vbi').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return vbPv()}
+  if(a==='vbcat'){VBC=k;document.querySelectorAll('[data-a=vbcat]').forEach(b=>b.classList.toggle('on',b.dataset.k===k));document.querySelectorAll('.vbi').forEach(b=>b.hidden=!(k==='Todos'||b.dataset.cat===k||b.dataset.k==='auto'||b.dataset.k==='custom'));return}
+  if(a==='vbtest')return vbTest();
+  if(a==='frx'){if(!confirm(k==='bg'?'Remover a foto de fundo das molduras?':k==='logo'?'Remover o logo?':k==='vbg'?'Remover o plano de fundo importado?':'Remover a moldura PNG do formato '+fN(k)+'?'))return;delete newFr[k];FR[k]=null;delFr[k]=1;if(k==='vbg'&&cfg.vb==='custom')cfg.vb='auto';bgClear();dirty();return page()}
   if(a==='bgx'){BG.img=null;await kvSet('bg',BG);applyBG(BG);if(cfg.bgG)dirty();return page()}
   
   if(a==='tpl'){const m=allT().find(x=>x.id===k);if(!m)return;Object.assign(cfg,tc(m));dirty();if(dtab!=='tpl')return page();document.querySelectorAll('.tp').forEach(b=>b.classList.toggle('on',b.dataset.k===k));return prevNow()}
